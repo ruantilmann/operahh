@@ -1,0 +1,3 @@
+{
+  "extends": "@operahh/config/tsconfig.base.json"
+}
