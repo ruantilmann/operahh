@@ -69,3 +69,14 @@ Este projeto inclui um arquivo de configuração `bts.jsonc` que armazena suas c
 - Todas as respostas e documentação devem ser fornecidas em **Português Brasileiro**
 - Mantenha termos técnicos em inglês quando apropriado, mas forneça traduções ou explicações quando necessário
 - Siga as convenções ortográficas e gramaticais do português brasileiro
+
+## Criação de Endpoints
+
+- Os endpoints devem ser organizados em módulos dentro de `packages/api/src/routers/`
+- Cada módulo deve ter seu próprio arquivo (ex: `users.ts`, `posts.ts`, etc.)
+- Use `publicProcedure` para endpoints que não exigem autenticação
+- Use `protectedProcedure` para endpoints que exigem autenticação
+- Sempre utilize Zod para validar entradas e saídas dos endpoints
+- Siga o padrão estabelecido no módulo de usuários (`users.ts`) como exemplo
+- Adicione o novo módulo ao roteador principal em `packages/api/src/routers/index.ts`
+- Consulte o guia detalhado em `.ruler/backend/createEndpoints.md` para mais informações
