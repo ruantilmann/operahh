@@ -1,72 +1,82 @@
 # operahh
 
-This project was created with [Better-T-Stack](https://github.com/AmanVarshney01/create-better-t-stack), a modern TypeScript stack that combines Next.js, Fastify, ORPC, and more.
+Este projeto foi criado com [Better-T-Stack](https://github.com/AmanVarshney01/create-better-t-stack), uma pilha moderna de TypeScript que combina Next.js, Fastify, ORPC e mais.
 
-## Features
+## Recursos
 
-- **TypeScript** - For type safety and improved developer experience
-- **Next.js** - Full-stack React framework
-- **TailwindCSS** - Utility-first CSS for rapid UI development
-- **shadcn/ui** - Reusable UI components
-- **Fastify** - Fast, low-overhead web framework
-- **oRPC** - End-to-end type-safe APIs with OpenAPI integration
-- **Node.js** - Runtime environment
-- **Prisma** - TypeScript-first ORM
-- **PostgreSQL** - Database engine
-- **Authentication** - Better-Auth
-- **PWA** - Progressive Web App support
-- **Turborepo** - Optimized monorepo build system
+- **TypeScript** - Para segurança de tipo e experiência de desenvolvedor aprimorada
+- **Next.js** - Framework React full-stack
+- **TailwindCSS** - CSS orientado a utilitários para desenvolvimento rápido de UI
+- **shadcn/ui** - Componentes de interface reutilizáveis
+- **Fastify** - Framework web rápido e com baixa sobrecarga
+- **oRPC** - APIs com tipagem segura de ponta a ponta com integração OpenAPI
+- **Node.js** - Ambiente de execução
+- **Prisma** - ORM orientado a TypeScript
+- **PostgreSQL** - Motor de banco de dados
+- **Autenticação** - Better-Auth
+- **PWA** - Suporte a aplicativo web progressivo
+- **Turborepo** - Sistema de compilação de monorepo otimizado
 
-## Getting Started
+## Começando
 
-First, install the dependencies:
+Primeiro, instale as dependências:
 
 ```bash
 npm install
 ```
 
-## Database Setup
+## Configuração do Banco de Dados
 
-This project uses PostgreSQL with Prisma.
+Este projeto usa PostgreSQL com Prisma.
 
-1. Make sure you have a PostgreSQL database set up.
-2. Update your `apps/server/.env` file with your PostgreSQL connection details.
+1. Certifique-se de ter um banco de dados PostgreSQL configurado (você pode usar o docker-compose.yml em `packages/db/` para iniciar uma instância local).
+2. Configure as variáveis de ambiente necessárias:
 
-3. Apply the schema to your database:
+   - Em `packages/db/.env`, defina as credenciais do banco de dados
+
+   - Em `apps/server/.env`, defina a URL do banco de dados
+
+3. Se você quiser usar o docker-compose para iniciar o banco de dados localmente, execute:
+   ```bash
+   cd packages/db
+   npm run db:start
+   ```
+
+4. Aplique o esquema ao seu banco de dados:
 
 ```bash
 npm run db:push
 ```
 
-Then, run the development server:
+Então, execute o servidor de desenvolvimento:
 
 ```bash
 npm run dev
 ```
 
-Open [http://localhost:3001](http://localhost:3001) in your browser to see the web application.
-The API is running at [http://localhost:3000](http://localhost:3000).
+Abra [http://localhost:3001](http://localhost:3001) no seu navegador para ver o aplicativo web.
+A API está rodando em [http://localhost:3000](http://localhost:3000).
 
-## Project Structure
+## Estrutura do Projeto
 
 ```
 operahh/
 ├── apps/
-│   ├── web/         # Frontend application (Next.js)
-│   └── server/      # Backend API (Fastify, ORPC)
+│   ├── web/         # Aplicação frontend (Next.js)
+│   └── server/      # API backend (Fastify, ORPC)
 ├── packages/
-│   ├── api/         # API layer / business logic
-│   ├── auth/        # Authentication configuration & logic
-│   └── db/          # Database schema & queries
+│   ├── api/         # Camada de API / lógica de negócios
+│   ├── auth/        # Configuração e lógica de autenticação
+│   └── db/          # Esquema e consultas do banco de dados
 ```
 
-## Available Scripts
+## Scripts Disponíveis
 
-- `npm run dev`: Start all applications in development mode
-- `npm run build`: Build all applications
-- `npm run dev:web`: Start only the web application
-- `npm run dev:server`: Start only the server
-- `npm run check-types`: Check TypeScript types across all apps
-- `npm run db:push`: Push schema changes to database
-- `npm run db:studio`: Open database studio UI
-- `cd apps/web && npm run generate-pwa-assets`: Generate PWA assets
+- `npm run dev`: Iniciar todos os aplicativos em modo de desenvolvimento
+- `npm run build`: Compilar todos os aplicativos
+- `npm run dev:web`: Iniciar apenas o aplicativo web
+- `npm run dev:server`: Iniciar apenas o servidor
+- `npm run check-types`: Verificar tipos do TypeScript em todos os aplicativos
+- `npm run db:push`: Enviar alterações de esquema para o banco de dados
+- `npm run db:studio`: Abrir a interface do estúdio do banco de dados
+- `cd apps/web && npm run generate-pwa-assets`: Gerar recursos do PWA
