@@ -10,6 +10,7 @@ export default function Dashboard({ session }: { session: typeof authClient.$Inf
   return (
     <>
       <p>API: {privateData.data?.message}</p>
+      <p>Session: {session?.user?.name}</p>
     </>
   );
 }
