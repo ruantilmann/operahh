@@ -3,12 +3,9 @@
 import * as React from "react";
 import Link from "next/link";
 
-import { ModeToggle } from "./mode-toggle";
-import UserMenu from "./user-menu";
 import {
   Sidebar,
   SidebarContent,
-  SidebarFooter,
   SidebarGroup,
   SidebarGroupContent,
   SidebarMenu,
@@ -53,12 +50,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
-      <SidebarFooter className="flex flex-col items-start gap-2 p-4">
-        <div className="flex items-center gap-2 w-full">
-          <ModeToggle />
-          <UserMenu />
-        </div>
-      </SidebarFooter>
       <SidebarRail />
     </Sidebar>
   );
