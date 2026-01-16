@@ -74,6 +74,16 @@ const mockHistory = [
 export default function Checklists() {
     const [date, setDate] = useState<Date | undefined>(new Date());
     const [selectedType, setSelectedType] = useState<string>("");
+    const [filterType, setFilterType] = useState<string>("all");
+    const [filterStatus, setFilterStatus] = useState<string>("all");
+
+    const filteredHistory = mockHistory.filter((item) => {
+        const typeMatch = filterType === "all" || item.tipo === filterType;
+        const statusMatch = filterStatus === "all" ||
+            (filterStatus === "concluido" && item.status === "Concluído") ||
+            (filterStatus === "pendente" && item.status === "Pendente");
+        return typeMatch && statusMatch;
+    });
 
     return (
         <div className="space-y-6">
@@ -160,7 +170,7 @@ export default function Checklists() {
                     )}
                 </TabsContent>
 
-                <TabsContent value="historico" className="space-y-6 mt-6">
+                 <TabsContent value="historico" className="space-y-6 mt-6">
                     <Card className="p-6">
                         <div className="flex justify-between items-center mb-4">
                             <h3 className="text-lg font-semibold">Base de Dados</h3>
@@ -173,7 +183,7 @@ export default function Checklists() {
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                             <div>
                                 <Label>Filtrar por Tipo</Label>
-                                <Select>
+                                <Select value={filterType} onValueChange={(val) => setFilterType(val ?? "all")}>
                                     <SelectTrigger>
                                         <SelectValue placeholder="Todos" />
                                     </SelectTrigger>
@@ -189,7 +199,7 @@ export default function Checklists() {
                             </div>
                             <div>
                                 <Label>Filtrar por Status</Label>
-                                <Select>
+                                <Select value={filterStatus} onValueChange={(val) => setFilterStatus(val ?? "all")}>
                                     <SelectTrigger>
                                         <SelectValue placeholder="Todos" />
                                     </SelectTrigger>
@@ -219,7 +229,7 @@ export default function Checklists() {
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
-                                    {mockHistory.map((item, index) => (
+                                    {filteredHistory.map((item, index) => (
                                         <TableRow key={index}>
                                             <TableCell>{format(new Date(item.data), "dd/MM/yyyy")}</TableCell>
                                             <TableCell>{item.tipo}</TableCell>
