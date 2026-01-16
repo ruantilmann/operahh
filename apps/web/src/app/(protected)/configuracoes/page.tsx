@@ -16,29 +16,52 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Settings, Users, DollarSign, Database, Plus, Trash2 } from "lucide-react";
-
-const mockUsers = [
-    {
-        nome: "Maria Silva",
-        email: "maria@akju.com",
-        funcao: "Administrador",
-        status: "Ativo",
-    },
-    {
-        nome: "João Santos",
-        email: "joao@akju.com",
-        funcao: "Operador",
-        status: "Ativo",
-    },
-    {
-        nome: "Ana Costa",
-        email: "ana@akju.com",
-        funcao: "Visualizador",
-        status: "Inativo",
-    },
-];
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { orpc, client } from "@/utils/orpc";
+import { useState } from "react";
+import { toast } from "sonner";
 
 export default function Configuracoes() {
+    const [editingUser, setEditingUser] = useState<string | null>(null);
+    const [editForm, setEditForm] = useState({ name: "", email: "" });
+
+    const queryClient = useQueryClient();
+
+    const { data: users, isLoading, error } = useQuery(orpc.settings.getAllUsers.queryOptions());
+
+    const updateUserMutation = useMutation({
+        mutationFn: async ({ userId, data }: { userId: string; data: { name?: string; email?: string } }) => {
+            // Usar o cliente orpc diretamente para fazer a mutation
+            return await client.settings.updateUser({
+                userId,
+                name: data.name,
+                email: data.email,
+            });
+        },
+        onSuccess: () => {
+            toast.success("Usuário atualizado com sucesso!");
+            queryClient.invalidateQueries({ queryKey: orpc.settings.getAllUsers.queryKey() });
+            setEditingUser(null);
+        },
+        onError: (error) => {
+            toast.error("Erro ao atualizar usuário: " + error.message);
+        },
+    });
+
+    const handleEdit = (user: any) => {
+        setEditingUser(user.id);
+        setEditForm({ name: user.name, email: user.email });
+    };
+
+    const handleSave = (userId: string) => {
+        updateUserMutation.mutate({ userId, data: editForm });
+    };
+
+    const handleCancel = () => {
+        setEditingUser(null);
+        setEditForm({ name: "", email: "" });
+    };
+
     return (
         <div className="space-y-6">
             <div>
@@ -78,35 +101,84 @@ export default function Configuracoes() {
                             </Button>
                         </div>
 
-                        <div className="overflow-x-auto">
-                            <Table>
-                                <TableHeader>
-                                    <TableRow>
-                                        <TableHead>Nome</TableHead>
-                                        <TableHead>Email</TableHead>
-                                        <TableHead className="text-right">Ações</TableHead>
-                                    </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                    {mockUsers.map((user, index) => (
-                                        <TableRow key={index}>
-                                            <TableCell className="font-medium">{user.nome}</TableCell>
-                                            <TableCell className="text-muted-foreground">
-                                                {user.email}
-                                            </TableCell>
-                                            <TableCell className="text-right space-x-2">
-                                                <Button variant="ghost" size="sm">
-                                                    Editar
-                                                </Button>
-                                                <Button variant="ghost" size="sm" className="text-destructive">
-                                                    Remover
-                                                </Button>
-                                            </TableCell>
+                        {isLoading ? (
+                            <div className="text-center py-4">Carregando usuários...</div>
+                        ) : error ? (
+                            <div className="text-center py-4 text-destructive">Erro ao carregar usuários</div>
+                        ) : (
+                            <div className="overflow-x-auto">
+                                <Table>
+                                    <TableHeader>
+                                        <TableRow>
+                                            <TableHead>Nome</TableHead>
+                                            <TableHead>Email</TableHead>
+                                            <TableHead>Status</TableHead>
+                                            <TableHead className="text-right">Ações</TableHead>
                                         </TableRow>
-                                    ))}
-                                </TableBody>
-                            </Table>
-                        </div>
+                                    </TableHeader>
+                                    <TableBody>
+                                        {users?.map((user) => (
+                                            <TableRow key={user.id}>
+                                                <TableCell className="font-medium">
+                                                    {editingUser === user.id ? (
+                                                        <Input
+                                                            value={editForm.name}
+                                                            onChange={(e) => setEditForm(prev => ({ ...prev, name: e.target.value }))}
+                                                            placeholder="Nome"
+                                                        />
+                                                    ) : (
+                                                        user.name
+                                                    )}
+                                                </TableCell>
+                                                <TableCell className="text-muted-foreground">
+                                                    {editingUser === user.id ? (
+                                                        <Input
+                                                            value={editForm.email}
+                                                            onChange={(e) => setEditForm(prev => ({ ...prev, email: e.target.value }))}
+                                                            placeholder="Email"
+                                                            type="email"
+                                                        />
+                                                    ) : (
+                                                        user.email
+                                                    )}
+                                                </TableCell>
+                                                <TableCell>
+                                                    <Badge variant={user.emailVerified ? "default" : "secondary"}>
+                                                        {user.emailVerified ? "Verificado" : "Pendente"}
+                                                    </Badge>
+                                                </TableCell>
+                                                <TableCell className="text-right space-x-2">
+                                                    {editingUser === user.id ? (
+                                                        <>
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="sm"
+                                                                onClick={() => handleSave(user.id)}
+                                                                disabled={updateUserMutation.isPending}
+                                                            >
+                                                                {updateUserMutation.isPending ? "Salvando..." : "Salvar"}
+                                                            </Button>
+                                                            <Button variant="ghost" size="sm" onClick={handleCancel}>
+                                                                Cancelar
+                                                            </Button>
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <Button variant="ghost" size="sm" onClick={() => handleEdit(user)}>
+                                                                Editar
+                                                            </Button>
+                                                            <Button variant="ghost" size="sm" className="text-destructive">
+                                                                Remover
+                                                            </Button>
+                                                        </>
+                                                    )}
+                                                </TableCell>
+                                            </TableRow>
+                                        ))}
+                                    </TableBody>
+                                </Table>
+                            </div>
+                        )}
                     </Card>
 
                 </TabsContent>
