@@ -84,8 +84,6 @@ export default function Configuracoes() {
                                     <TableRow>
                                         <TableHead>Nome</TableHead>
                                         <TableHead>Email</TableHead>
-                                        <TableHead>Função</TableHead>
-                                        <TableHead>Status</TableHead>
                                         <TableHead className="text-right">Ações</TableHead>
                                     </TableRow>
                                 </TableHeader>
@@ -95,18 +93,6 @@ export default function Configuracoes() {
                                             <TableCell className="font-medium">{user.nome}</TableCell>
                                             <TableCell className="text-muted-foreground">
                                                 {user.email}
-                                            </TableCell>
-                                            <TableCell>
-                                                <Badge variant="secondary">{user.funcao}</Badge>
-                                            </TableCell>
-                                            <TableCell>
-                                                {user.status === "Ativo" ? (
-                                                    <Badge className="bg-green-500 hover:bg-green-600 text-white">
-                                                        Ativo
-                                                    </Badge>
-                                                ) : (
-                                                    <Badge variant="secondary">Inativo</Badge>
-                                                )}
                                             </TableCell>
                                             <TableCell className="text-right space-x-2">
                                                 <Button variant="ghost" size="sm">
@@ -123,29 +109,6 @@ export default function Configuracoes() {
                         </div>
                     </Card>
 
-                    <Card className="p-6">
-                        <h3 className="text-lg font-semibold mb-4">Permissões por Função</h3>
-                        <div className="space-y-4">
-                            <div className="p-4 bg-secondary rounded-lg">
-                                <p className="font-semibold mb-2">Administrador</p>
-                                <p className="text-sm text-muted-foreground">
-                                    Acesso total ao sistema, incluindo configurações e gestão de usuários
-                                </p>
-                            </div>
-                            <div className="p-4 bg-secondary rounded-lg">
-                                <p className="font-semibold mb-2">Operador</p>
-                                <p className="text-sm text-muted-foreground">
-                                    Pode registrar produção, preencher checklists e visualizar relatórios
-                                </p>
-                            </div>
-                            <div className="p-4 bg-secondary rounded-lg">
-                                <p className="font-semibold mb-2">Visualizador</p>
-                                <p className="text-sm text-muted-foreground">
-                                    Apenas visualização de dados e relatórios
-                                </p>
-                            </div>
-                        </div>
-                    </Card>
                 </TabsContent>
 
                 <TabsContent value="financeiro" className="space-y-6 mt-6">
