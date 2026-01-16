@@ -17,6 +17,7 @@ import {
   Settings,
   User,
   LogOut,
+  Database,
 } from "lucide-react"
 
 import {
@@ -42,6 +43,7 @@ const navItems = [
   { to: "/lucro", label: "Lucro", icon: TrendingUp },
   { to: "/inventario", label: "Inventário", icon: Package },
   { to: "/estoque", label: "Estoque", icon: Factory },
+  { to: "/base-de-dados", label: "Base de Dados", icon: Database },
   { to: "/configuracoes", label: "Configurações", icon: Settings },
 ] as const;
 
@@ -50,7 +52,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     <Sidebar {...props}>
       <SidebarContent>
         <div className="px-6 py-8">
-<div className="flex items-center gap-3">
+          <div className="flex items-center gap-3">
             <div className="h-10 w-10 rounded-lg bg-primary flex items-center justify-center">
               <span className="text-primary-foreground font-bold text-xl">O</span>
             </div>
