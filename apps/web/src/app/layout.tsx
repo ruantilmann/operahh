@@ -3,15 +3,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 
 import "../index.css";
-import { AppSidebar } from "@/components/sidebar";
 import Providers from "@/components/providers";
-import {
-  SidebarInset,
-  SidebarProvider,
-  SidebarTrigger,
-} from "@/components/ui/sidebar";
-import { ModeToggle } from "@/components/mode-toggle";
-import UserMenu from "@/components/user-menu";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -37,21 +29,11 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         <Providers>
-          <SidebarProvider>
-            <AppSidebar />
-            <SidebarInset>
-              <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
-                <SidebarTrigger />
-                <div className="ml-auto flex items-center gap-4">
-                  <ModeToggle />
-                  <UserMenu />
-                </div>
-              </header>
-              <main className="flex flex-1 flex-col p-4">
-                {children}
-              </main>
-            </SidebarInset>
-          </SidebarProvider>
+          <div className="flex flex-col min-h-screen">
+            <main className="flex flex-1 flex-col">
+              {children}
+            </main>
+          </div>
         </Providers>
       </body>
     </html>
