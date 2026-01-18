@@ -29,7 +29,7 @@ function SelectValue({
       className={cn("flex flex-1 text-left", className)}
       {...props}
     >
-      {({ value, text }) => text || placeholder}
+      {(value) => value?.text || placeholder}
     </SelectPrimitive.Value>
   )
 }
