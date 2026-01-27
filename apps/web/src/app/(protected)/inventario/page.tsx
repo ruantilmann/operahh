@@ -13,6 +13,16 @@ import {
     SelectValue,
 } from "@/components/ui/select";
 import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
+    DialogClose,
+} from "@/components/ui/dialog";
+import {
     Table,
     TableBody,
     TableCell,
@@ -95,10 +105,92 @@ export default function Inventario() {
                         Móveis, equipamentos e utensílios
                     </p>
                 </div>
-                <Button size="lg" className="gap-2">
-                    <Plus className="h-4 w-4" />
-                    Adicionar Item
-                </Button>
+                 <Dialog>
+                     <DialogTrigger>
+                         <Button size="lg" className="gap-2">
+                             <Plus className="h-4 w-4" />
+                             Adicionar Item
+                         </Button>
+                     </DialogTrigger>
+                     <DialogContent className="sm:max-w-[600px]">
+                         <DialogHeader>
+                             <DialogTitle>Adicionar Novo Item</DialogTitle>
+                             <DialogDescription>
+                                 Preencha os detalhes do novo item para adicioná-lo ao inventário.
+                             </DialogDescription>
+                         </DialogHeader>
+                         <form>
+                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-4">
+                                 <div>
+                                     <Label>Nome do Item</Label>
+                                     <Input placeholder="Ex: Batedeira Industrial" />
+                                 </div>
+                                 <div>
+                                     <Label>Categoria</Label>
+                                     <Select>
+                                         <SelectTrigger>
+                                             <SelectValue placeholder="Selecione" />
+                                         </SelectTrigger>
+                                         <SelectContent>
+                                             <SelectItem value="equipamentos">Equipamentos</SelectItem>
+                                             <SelectItem value="moveis">Móveis</SelectItem>
+                                             <SelectItem value="utensilios">Utensílios</SelectItem>
+                                         </SelectContent>
+                                     </Select>
+                                 </div>
+                                 <div>
+                                     <Label>Data de Compra</Label>
+                                     <Input type="date" />
+                                 </div>
+                                 <div>
+                                     <Label>Número de Série</Label>
+                                     <Input placeholder="Ex: BAT-2024-001" />
+                                 </div>
+                                 <div>
+                                     <Label>Valor (R$)</Label>
+                                     <Input type="number" step="0.01" placeholder="0,00" />
+                                 </div>
+                                 <div>
+                                     <Label>Garantia até</Label>
+                                     <Input type="date" />
+                                 </div>
+                                 <div>
+                                     <Label>Local de Armazenamento</Label>
+                                     <Input placeholder="Ex: Cozinha Principal" />
+                                 </div>
+                                 <div>
+                                     <Label>Estado de Conservação</Label>
+                                     <Select>
+                                         <SelectTrigger>
+                                             <SelectValue placeholder="Selecione" />
+                                         </SelectTrigger>
+                                         <SelectContent>
+                                             <SelectItem value="otimo">Ótimo</SelectItem>
+                                             <SelectItem value="bom">Bom</SelectItem>
+                                             <SelectItem value="regular">Regular</SelectItem>
+                                             <SelectItem value="ruim">Ruim</SelectItem>
+                                         </SelectContent>
+                                     </Select>
+                                 </div>
+                                 <div className="md:col-span-2">
+                                     <Label>Upload de Foto</Label>
+                                     <div className="mt-2 flex items-center gap-2">
+                                         <Input type="file" accept="image/*" />
+                                         <Button variant="outline" size="icon">
+                                             <Upload className="h-4 w-4" />
+                                         </Button>
+                                     </div>
+                                 </div>
+                             </div>
+                             <DialogFooter>
+                                 <DialogClose>
+                                     <Button variant="outline">Cancelar</Button>
+                                 </DialogClose>
+                                 <Button type="submit">Adicionar ao Inventário</Button>
+                             </DialogFooter>
+                         </form>
+                     </DialogContent>
+                 </Dialog>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
@@ -219,75 +311,6 @@ export default function Inventario() {
                             ))}
                         </TableBody>
                     </Table>
-                </div>
-            </Card>
-
-            <Card className="p-6">
-                <h3 className="text-lg font-semibold mb-4">Adicionar Novo Item</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                        <Label>Nome do Item</Label>
-                        <Input placeholder="Ex: Batedeira Industrial" />
-                    </div>
-                    <div>
-                        <Label>Categoria</Label>
-                        <Select>
-                            <SelectTrigger>
-                                <SelectValue placeholder="Selecione" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="equipamentos">Equipamentos</SelectItem>
-                                <SelectItem value="moveis">Móveis</SelectItem>
-                                <SelectItem value="utensilios">Utensílios</SelectItem>
-                            </SelectContent>
-                        </Select>
-                    </div>
-                    <div>
-                        <Label>Data de Compra</Label>
-                        <Input type="date" />
-                    </div>
-                    <div>
-                        <Label>Número de Série</Label>
-                        <Input placeholder="Ex: BAT-2024-001" />
-                    </div>
-                    <div>
-                        <Label>Valor (R$)</Label>
-                        <Input type="number" step="0.01" placeholder="0,00" />
-                    </div>
-                    <div>
-                        <Label>Garantia até</Label>
-                        <Input type="date" />
-                    </div>
-                    <div>
-                        <Label>Local de Armazenamento</Label>
-                        <Input placeholder="Ex: Cozinha Principal" />
-                    </div>
-                    <div>
-                        <Label>Estado de Conservação</Label>
-                        <Select>
-                            <SelectTrigger>
-                                <SelectValue placeholder="Selecione" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="otimo">Ótimo</SelectItem>
-                                <SelectItem value="bom">Bom</SelectItem>
-                                <SelectItem value="regular">Regular</SelectItem>
-                                <SelectItem value="ruim">Ruim</SelectItem>
-                            </SelectContent>
-                        </Select>
-                    </div>
-                    <div className="md:col-span-2">
-                        <Label>Upload de Foto</Label>
-                        <div className="mt-2 flex items-center gap-2">
-                            <Input type="file" accept="image/*" />
-                            <Button variant="outline" size="icon">
-                                <Upload className="h-4 w-4" />
-                            </Button>
-                        </div>
-                    </div>
-                </div>
-                <div className="flex justify-end mt-6">
-                    <Button size="lg">Adicionar ao Inventário</Button>
                 </div>
             </Card>
         </div>
