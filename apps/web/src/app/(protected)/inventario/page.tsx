@@ -185,10 +185,8 @@ export default function Inventario() {
                                  </div>
                              </div>
                              <DialogFooter>
-                                 <DialogClose>
-                                     <Button variant="outline">Cancelar</Button>
-                                 </DialogClose>
-                                 <Button type="submit">Adicionar ao Inventário</Button>
+                                <DialogClose render={<Button variant="outline">Cancelar</Button>} />
+                                <Button type="submit">Adicionar ao Inventário</Button>
                              </DialogFooter>
                          </form>
                      </DialogContent>
