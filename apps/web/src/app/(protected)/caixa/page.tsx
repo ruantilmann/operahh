@@ -129,33 +129,151 @@ export default function Caixa() {
                                     </Button>
                                 }
                             />
-                            <DialogContent className="max-w-md">
+                            <DialogContent className="max-w-2xl">
                                 <DialogHeader>
                                     <DialogTitle className="flex items-center gap-2">
                                         <Plus className="h-5 w-5 text-green-500" />
                                         Registrar Entrada
                                     </DialogTitle>
                                 </DialogHeader>
-                                <div className="grid grid-cols-1 gap-4 mb-4">
-                                    <div>
-                                        <Label>Data</Label>
-                                        <Input type="date" />
-                                    </div>
-                                    <div>
-                                        <Label>Total do Dia</Label>
-                                        <Input type="number" step="0.01" placeholder="R$ 0,00" />
-                                    </div>
-                                    <div>
-                                        <Label>Observação</Label>
-                                        <Textarea placeholder="Observações..." rows={2} />
-                                    </div>
-                                </div>
-                                <div className="flex justify-end">
-                                    <Button size="lg" className="gap-2" onClick={() => setIsEntryModalOpen(false)}>
-                                        <ArrowUpRight className="h-4 w-4" />
-                                        Registrar Entrada
-                                    </Button>
-                                </div>
+                                <Tabs defaultValue="valor" className="w-full">
+                                    <TabsList className="grid w-full grid-cols-2">
+                                        <TabsTrigger value="lancamento-valor">Lançar Entrada</TabsTrigger>
+                                        <TabsTrigger value="lancamento-por-produto">Lançar por Produto</TabsTrigger>
+                                    </TabsList>
+                                    
+                                    <TabsContent value="lancamento-valor" className="space-y-4 mt-4">
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                                            <div>
+                                                <Label>Data</Label>
+                                                <Input type="date" />
+                                            </div>
+                                            <div>
+                                                <Label>Valor</Label>
+                                                <Input type="number" step="0.01" placeholder="R$ 0,00" />
+                                            </div>
+                                            <div>
+                                                <Label>Categoria</Label>
+                                                <Select>
+                                                    <SelectTrigger>
+                                                        <SelectValue placeholder="Selecione" />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        <SelectItem value="vendas">Vendas</SelectItem>
+                                                        <SelectItem value="servicos">Serviços</SelectItem>
+                                                        <SelectItem value="aluguel">Aluguel</SelectItem>
+                                                        <SelectItem value="outros">Outros</SelectItem>
+                                                    </SelectContent>
+                                                </Select>
+                                            </div>
+                                            <div>
+                                                <Label>Pagamento</Label>
+                                                <Select>
+                                                    <SelectTrigger>
+                                                        <SelectValue placeholder="Selecione" />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        <SelectItem value="dinheiro">Dinheiro</SelectItem>
+                                                        <SelectItem value="cartao">Cartão</SelectItem>
+                                                        <SelectItem value="debito">Débito</SelectItem>
+                                                        <SelectItem value="pix">PIX</SelectItem>
+                                                    </SelectContent>
+                                                </Select>
+                                            </div>
+                                            <div className="md:col-span-2">
+                                                <Label>Descrição</Label>
+                                                <Textarea placeholder="Descrição..." rows={2} />
+                                            </div>
+                                            <div>
+                                                <Label>Situação</Label>
+                                                <Select>
+                                                    <SelectTrigger>
+                                                        <SelectValue placeholder="Selecione" />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        <SelectItem value="pendente">Pendente</SelectItem>
+                                                        <SelectItem value="pago">Pago</SelectItem>
+                                                        <SelectItem value="cancelado">Cancelado</SelectItem>
+                                                    </SelectContent>
+                                                </Select>
+                                            </div>
+                                        </div>
+                                        <div className="flex justify-end">
+                                            <Button size="lg" className="gap-2" onClick={() => setIsEntryModalOpen(false)}>
+                                                <ArrowUpRight className="h-4 w-4" />
+                                                Registrar Entrada
+                                            </Button>
+                                        </div>
+                                    </TabsContent>
+                                    
+                                    <TabsContent value="lancamento-por-produto" className="space-y-4 mt-4">
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                                            <div>
+                                                <Label>Data</Label>
+                                                <Input type="date" />
+                                            </div>
+                                            <div>
+                                                <Label>Produto</Label>
+                                                <Input placeholder="Nome do produto" />
+                                            </div>
+                                            <div>
+                                                <Label>Quantidade</Label>
+                                                <Input type="number" placeholder="0" />
+                                            </div>
+                                            <div>
+                                                <Label>Categoria</Label>
+                                                <Select>
+                                                    <SelectTrigger>
+                                                        <SelectValue placeholder="Selecione" />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        <SelectItem value="doces">Doces</SelectItem>
+                                                        <SelectItem value="salgados">Salgados</SelectItem>
+                                                        <SelectItem value="bebidas">Bebidas</SelectItem>
+                                                        <SelectItem value="outros">Outros</SelectItem>
+                                                    </SelectContent>
+                                                </Select>
+                                            </div>
+                                            <div className="md:col-span-2">
+                                                <Label>Descrição</Label>
+                                                <Textarea placeholder="Descrição do produto..." rows={2} />
+                                            </div>
+                                            <div>
+                                                <Label>Pagamento</Label>
+                                                <Select>
+                                                    <SelectTrigger>
+                                                        <SelectValue placeholder="Selecione" />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        <SelectItem value="dinheiro">Dinheiro</SelectItem>
+                                                        <SelectItem value="cartao">Cartão</SelectItem>
+                                                        <SelectItem value="debito">Débito</SelectItem>
+                                                        <SelectItem value="pix">PIX</SelectItem>
+                                                    </SelectContent>
+                                                </Select>
+                                            </div>
+                                            <div>
+                                                <Label>Situação</Label>
+                                                <Select>
+                                                    <SelectTrigger>
+                                                        <SelectValue placeholder="Selecione" />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        <SelectItem value="pendente">Pendente</SelectItem>
+                                                        <SelectItem value="pago">Pago</SelectItem>
+                                                        <SelectItem value="cancelado">Cancelado</SelectItem>
+                                                    </SelectContent>
+                                                </Select>
+                                            </div>
+                                        </div>
+                                        <div className="flex justify-end">
+                                            <Button size="lg" className="gap-2" onClick={() => setIsEntryModalOpen(false)}>
+                                                <ArrowUpRight className="h-4 w-4" />
+                                                Registrar Entrada
+                                            </Button>
+                                        </div>
+                                    </TabsContent>
+                                </Tabs>
                             </DialogContent>
                         </Dialog>
                     </div>
