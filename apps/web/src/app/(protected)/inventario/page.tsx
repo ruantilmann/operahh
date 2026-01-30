@@ -106,12 +106,14 @@ export default function Inventario() {
                     </p>
                 </div>
                  <Dialog>
-                     <DialogTrigger>
-                         <Button size="lg" className="gap-2">
-                             <Plus className="h-4 w-4" />
-                             Adicionar Item
-                         </Button>
-                     </DialogTrigger>
+<DialogTrigger 
+                         render={
+                             <Button size="lg" className="gap-2">
+                                 <Plus className="h-4 w-4" />
+                                 Adicionar Item
+                             </Button>
+                         }
+                     />
                      <DialogContent className="sm:max-w-[600px]">
                          <DialogHeader>
                              <DialogTitle>Adicionar Novo Item</DialogTitle>

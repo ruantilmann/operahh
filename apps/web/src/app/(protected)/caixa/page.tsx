@@ -1,11 +1,19 @@
 "use client";
 
+import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
+} from "@/components/ui/dialog";
 import {
     Select,
     SelectContent,
@@ -49,6 +57,8 @@ const mockExits = [
 ];
 
 export default function Caixa() {
+    const [isEntryModalOpen, setIsEntryModalOpen] = useState(false);
+    const [isExitModalOpen, setIsExitModalOpen] = useState(false);
     const totalEntries = mockEntries.reduce((sum, entry) => sum + entry.total, 0);
     const totalExits = mockExits.reduce((sum, exit) => sum + exit.valor, 0);
     const balance = totalEntries - totalExits;
@@ -109,33 +119,46 @@ export default function Caixa() {
                 </TabsList>
 
                 <TabsContent value="entradas" className="space-y-6 mt-6">
-                    <Card className="p-6">
-                        <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                            <Plus className="h-5 w-5 text-green-500" />
-                            Registrar Entrada
-                        </h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                            <div>
-                                <Label>Data</Label>
-                                <Input type="date" />
-                            </div>
-                            <div>
-                                <Label>Total do Dia</Label>
-                                <Input type="number" step="0.01" placeholder="R$ 0,00" />
-                            </div>
-                            <div className="md:col-span-2">
-                                <Label>Observação</Label>
-                                <Textarea placeholder="Observações..." rows={2} />
-                            </div>
-                        </div>
-                        <div className="flex justify-end">
-                            <Button size="lg" className="gap-2">
-                                <ArrowUpRight className="h-4 w-4" />
-                                Registrar Entrada
-                            </Button>
-                        </div>
-                    </Card>
-
+                    <div className="flex justify-between items-center mt-4">
+                        <Dialog open={isEntryModalOpen} onOpenChange={setIsEntryModalOpen}>
+<DialogTrigger 
+                                render={
+                                    <Button className="gap-2">
+                                        <Plus className="h-4 w-4" />
+                                        Registrar Entrada
+                                    </Button>
+                                }
+                            />
+                            <DialogContent className="max-w-md">
+                                <DialogHeader>
+                                    <DialogTitle className="flex items-center gap-2">
+                                        <Plus className="h-5 w-5 text-green-500" />
+                                        Registrar Entrada
+                                    </DialogTitle>
+                                </DialogHeader>
+                                <div className="grid grid-cols-1 gap-4 mb-4">
+                                    <div>
+                                        <Label>Data</Label>
+                                        <Input type="date" />
+                                    </div>
+                                    <div>
+                                        <Label>Total do Dia</Label>
+                                        <Input type="number" step="0.01" placeholder="R$ 0,00" />
+                                    </div>
+                                    <div>
+                                        <Label>Observação</Label>
+                                        <Textarea placeholder="Observações..." rows={2} />
+                                    </div>
+                                </div>
+                                <div className="flex justify-end">
+                                    <Button size="lg" className="gap-2" onClick={() => setIsEntryModalOpen(false)}>
+                                        <ArrowUpRight className="h-4 w-4" />
+                                        Registrar Entrada
+                                    </Button>
+                                </div>
+                            </DialogContent>
+                        </Dialog>
+                    </div>
                     <Card className="p-6">
                         <h3 className="text-lg font-semibold mb-4">Histórico de Entradas</h3>
                         <div className="overflow-x-auto">
@@ -166,68 +189,81 @@ export default function Caixa() {
                 </TabsContent>
 
                 <TabsContent value="saidas" className="space-y-6 mt-6">
-                    <Card className="p-6">
-                        <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                            <Plus className="h-5 w-5 text-destructive" />
-                            Registrar Saída
-                        </h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                            <div>
-                                <Label>Data</Label>
-                                <Input type="date" />
-                            </div>
-                            <div>
-                                <Label>Categoria</Label>
-                                <Select>
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Selecione" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="materia">Matéria-prima</SelectItem>
-                                        <SelectItem value="energia">Energia</SelectItem>
-                                        <SelectItem value="agua">Água</SelectItem>
-                                        <SelectItem value="gas">Gás</SelectItem>
-                                        <SelectItem value="aluguel">Aluguel</SelectItem>
-                                        <SelectItem value="outros">Outros</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                            <div className="md:col-span-2">
-                                <Label>Descrição</Label>
-                                <Input placeholder="Descrição da despesa" />
-                            </div>
-                            <div>
-                                <Label>Valor</Label>
-                                <Input type="number" step="0.01" placeholder="R$ 0,00" />
-                            </div>
-                            <div>
-                                <Label>Forma de Pagamento</Label>
-                                <Select>
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Selecione" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="dinheiro">Dinheiro</SelectItem>
-                                        <SelectItem value="cartao">Cartão</SelectItem>
-                                        <SelectItem value="debito">Débito</SelectItem>
-                                        <SelectItem value="pix">PIX</SelectItem>
-                                        <SelectItem value="boleto">Boleto</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                            <div className="md:col-span-2">
-                                <Label>Responsável</Label>
-                                <Input placeholder="Nome do responsável" />
-                            </div>
-                        </div>
-                        <div className="flex justify-end">
-                            <Button size="lg" variant="destructive" className="gap-2">
-                                <ArrowDownRight className="h-4 w-4" />
-                                Registrar Saída
-                            </Button>
-                        </div>
-                    </Card>
-
+                    <div className="flex justify-between items-center mt-4">
+                        <Dialog open={isExitModalOpen} onOpenChange={setIsExitModalOpen}>
+                            <DialogTrigger 
+                                render={
+                                    <Button variant="destructive" className="gap-2">
+                                        <Plus className="h-4 w-4" />
+                                        Registrar Saída
+                                    </Button>
+                                }
+                            />
+                            <DialogContent className="max-w-md">
+                                <DialogHeader>
+                                    <DialogTitle className="flex items-center gap-2">
+                                        <Plus className="h-5 w-5 text-destructive" />
+                                        Registrar Saída
+                                    </DialogTitle>
+                                </DialogHeader>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                                    <div>
+                                        <Label>Data</Label>
+                                        <Input type="date" />
+                                    </div>
+                                    <div>
+                                        <Label>Categoria</Label>
+                                        <Select>
+                                            <SelectTrigger>
+                                                <SelectValue placeholder="Selecione" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="materia">Matéria-prima</SelectItem>
+                                                <SelectItem value="energia">Energia</SelectItem>
+                                                <SelectItem value="agua">Água</SelectItem>
+                                                <SelectItem value="gas">Gás</SelectItem>
+                                                <SelectItem value="aluguel">Aluguel</SelectItem>
+                                                <SelectItem value="outros">Outros</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                    <div className="md:col-span-2">
+                                        <Label>Descrição</Label>
+                                        <Input placeholder="Descrição da despesa" />
+                                    </div>
+                                    <div>
+                                        <Label>Valor</Label>
+                                        <Input type="number" step="0.01" placeholder="R$ 0,00" />
+                                    </div>
+                                    <div>
+                                        <Label>Forma de Pagamento</Label>
+                                        <Select>
+                                            <SelectTrigger>
+                                                <SelectValue placeholder="Selecione" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="dinheiro">Dinheiro</SelectItem>
+                                                <SelectItem value="cartao">Cartão</SelectItem>
+                                                <SelectItem value="debito">Débito</SelectItem>
+                                                <SelectItem value="pix">PIX</SelectItem>
+                                                <SelectItem value="boleto">Boleto</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                    <div className="md:col-span-2">
+                                        <Label>Responsável</Label>
+                                        <Input placeholder="Nome do responsável" />
+                                    </div>
+                                </div>
+                                <div className="flex justify-end">
+                                    <Button size="lg" variant="destructive" className="gap-2" onClick={() => setIsExitModalOpen(false)}>
+                                        <ArrowDownRight className="h-4 w-4" />
+                                        Registrar Saída
+                                    </Button>
+                                </div>
+                            </DialogContent>
+                        </Dialog>
+                    </div>
                     <Card className="p-6">
                         <h3 className="text-lg font-semibold mb-4">Histórico de Saídas</h3>
                         <div className="overflow-x-auto">
