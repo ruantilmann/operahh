@@ -77,9 +77,10 @@ export default function BaseDeDadosPage() {
       </div>
 
       <Tabs defaultValue="financeiro" className="w-full">
-        <TabsList className="grid w-full grid-cols-3 max-w-lg">
+        <TabsList className="grid w-full grid-cols-4 max-w-xl">
           <TabsTrigger value="financeiro">Financeiro</TabsTrigger>
           <TabsTrigger value="receitas">Receitas</TabsTrigger>
+          <TabsTrigger value="categorias">Categorias</TabsTrigger>
           <TabsTrigger value="produtos">Produtos</TabsTrigger>
         </TabsList>
 
@@ -173,6 +174,9 @@ export default function BaseDeDadosPage() {
             </Button>
           </Card>
 
+        </TabsContent>
+
+        <TabsContent value="categorias" className="space-y-6 mt-6">
           <Card className="p-6">
             <h3 className="text-lg font-semibold mb-4">Gestão de Categorias</h3>
             <div className="grid grid-cols-2 gap-4 mb-4">
