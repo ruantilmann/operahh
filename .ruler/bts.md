@@ -23,7 +23,7 @@ Este é um monorepo com a seguinte estrutura:
 - `npm run dev:server` - Iniciar apenas o servidor
 - `npm run build` - Compilar todos os aplicativos
 - `npm run lint` - Verificar lint em todos os pacotes
-- `npm run typecheck` - Verificar tipos do TypeScript em todos os pacotes
+- `npm run check-types` - Verificar tipos do TypeScript em todos os pacotes
 
 ## Comandos de Banco de Dados
 

@@ -1,6 +1,5 @@
 "use client";
 
-import ProtectedRoute from "@/components/protected-route";
 import { StatCard } from "@/components/stat-card";
 import {
   TrendingUp,
@@ -77,14 +76,13 @@ const COLORS = ["hsl(var(--chart-1))", "hsl(var(--chart-2))", "hsl(var(--chart-3
 
 export default function Dashboard() {
   return (
-    <ProtectedRoute>
-      <div className="space-y-6">
-        <div>
-          <h2 className="text-3xl font-bold tracking-tight text-foreground">Dashboard</h2>
-          <p className="text-muted-foreground">
-            Visão geral do desempenho da sua doceria.
-          </p>
-        </div>
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-3xl font-bold tracking-tight text-foreground">Dashboard</h2>
+        <p className="text-muted-foreground">
+          Visão geral do desempenho da sua doceria.
+        </p>
+      </div>
 
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           {stats.map((stat) => (
@@ -200,7 +198,6 @@ export default function Dashboard() {
             </CardContent>
           </Card>
         </div>
-      </div>
-    </ProtectedRoute>
+    </div>
   );
 }

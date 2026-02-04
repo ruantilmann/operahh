@@ -4,9 +4,38 @@ import { env } from "@operahh/env/server";
 
 import { protectedProcedure } from "../index";
 
+const userSettingsOutput = z.object({
+  id: z.string(),
+  name: z.string(),
+  email: z.string().email(),
+  emailVerified: z.boolean(),
+  image: z.string().nullable(),
+  createdAt: z.string(),
+});
+
+const userListOutput = z.array(z.object({
+  id: z.string(),
+  name: z.string(),
+  email: z.string().email(),
+  emailVerified: z.boolean(),
+  createdAt: z.string(),
+}));
+
+const updateResponseOutput = z.object({
+  success: z.boolean(),
+  updatedFields: z.array(z.string()),
+  userId: z.string(),
+});
+
+const createUserOutput = z.object({
+  success: z.boolean(),
+  user: z.unknown().nullable(),
+});
+
 export const settingsRouter = {
   // Endpoint protegido para obter as informações do usuário
   getUserSettings: protectedProcedure
+    .output(userSettingsOutput)
     .handler(async ({ context }) => {
       const user = context.session?.user;
       if (!user) {
@@ -19,13 +48,14 @@ export const settingsRouter = {
         name: user.name,
         email: user.email,
         emailVerified: user.emailVerified,
-        image: user.image,
-        createdAt: user.createdAt,
+        image: user.image ?? null,
+        createdAt: user.createdAt.toISOString(),
       };
     }),
 
   // Endpoint protegido para listar todos os usuários do sistema
   getAllUsers: protectedProcedure
+    .output(userListOutput)
     .handler(async () => {
       const users = await prisma.user.findMany({
         select: {
@@ -40,16 +70,20 @@ export const settingsRouter = {
         },
       });
 
-      return users;
+      return users.map((user) => ({
+        ...user,
+        createdAt: user.createdAt.toISOString(),
+      }));
     }),
 
    // Endpoint protegido para atualizar as informações do usuário logado
    updateUserSettings: protectedProcedure
-     .input(z.object({
-       name: z.string().min(1).max(100).optional(),
-       email: z.string().email().optional(),
-     }))
-     .handler(async ({ input, context }) => {
+      .input(z.object({
+        name: z.string().min(1).max(100).optional(),
+        email: z.string().email().optional(),
+      }))
+      .output(updateResponseOutput)
+      .handler(async ({ input, context }) => {
        const user = context.session?.user;
        if (!user) {
          throw new Error("Usuário não encontrado");
@@ -70,12 +104,13 @@ export const settingsRouter = {
 
    // Endpoint protegido para atualizar qualquer usuário
    updateUser: protectedProcedure
-      .input(z.object({
-        userId: z.string(),
-        name: z.string().min(1).max(100).optional(),
-        email: z.string().email().optional(),
-      }))
-      .handler(async ({ input }) => {
+       .input(z.object({
+         userId: z.string(),
+         name: z.string().min(1).max(100).optional(),
+         email: z.string().email().optional(),
+       }))
+       .output(updateResponseOutput)
+       .handler(async ({ input }) => {
        // Atualizar usuário específico no banco de dados
        await prisma.user.update({
          where: { id: input.userId },
@@ -99,6 +134,7 @@ export const settingsRouter = {
        email: z.string().email(),
        password: z.string().min(8),
      }))
+     .output(createUserOutput)
      .handler(async ({ input }) => {
        const baseUrl = env.BETTER_AUTH_URL.replace(/\/$/, "");
        const response = await fetch(`${baseUrl}/api/auth/sign-up/email`, {
