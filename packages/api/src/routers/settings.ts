@@ -1,6 +1,8 @@
 import { z } from "zod";
-import { protectedProcedure } from "../index";
 import prisma from "@operahh/db";
+import { env } from "@operahh/env/server";
+
+import { protectedProcedure } from "../index";
 
 export const settingsRouter = {
   // Endpoint protegido para obter as informações do usuário
@@ -66,14 +68,14 @@ export const settingsRouter = {
        };
      }),
 
-   // Endpoint protegido para atualizar qualquer usuário (para admins)
+   // Endpoint protegido para atualizar qualquer usuário
    updateUser: protectedProcedure
-     .input(z.object({
-       userId: z.string(),
-       name: z.string().min(1).max(100).optional(),
-       email: z.string().email().optional(),
-     }))
-     .handler(async ({ input }) => {
+      .input(z.object({
+        userId: z.string(),
+        name: z.string().min(1).max(100).optional(),
+        email: z.string().email().optional(),
+      }))
+      .handler(async ({ input }) => {
        // Atualizar usuário específico no banco de dados
        await prisma.user.update({
          where: { id: input.userId },
@@ -83,10 +85,48 @@ export const settingsRouter = {
          },
        });
 
-       return {
-         success: true,
-         updatedFields: ["name", "email"],
-         userId: input.userId,
-       };
+        return {
+          success: true,
+          updatedFields: ["name", "email"],
+          userId: input.userId,
+        };
+      }),
+
+   // Endpoint protegido para criar novo usuário via Better Auth
+   createUser: protectedProcedure
+     .input(z.object({
+       name: z.string().min(2).max(100),
+       email: z.string().email(),
+       password: z.string().min(8),
+     }))
+     .handler(async ({ input }) => {
+       const baseUrl = env.BETTER_AUTH_URL.replace(/\/$/, "");
+       const response = await fetch(`${baseUrl}/api/auth/sign-up/email`, {
+         method: "POST",
+         headers: {
+           "Content-Type": "application/json",
+           Origin: env.CORS_ORIGIN,
+         },
+         body: JSON.stringify({
+           name: input.name,
+           email: input.email,
+           password: input.password,
+         }),
+       });
+
+       if (response.ok) {
+         const data = (await response.json().catch(() => null)) as { user?: unknown } | null;
+         return {
+           success: true,
+           user: data?.user ?? null,
+         };
+       }
+
+       if (response.status === 409) {
+         throw new Error("Usuário já existe");
+       }
+
+       const errorMessage = await response.text();
+       throw new Error(errorMessage || "Falha ao criar usuário");
      }),
 };

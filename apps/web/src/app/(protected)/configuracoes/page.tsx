@@ -15,15 +15,26 @@ import {
     TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Settings, Users, Plus, Trash2 } from "lucide-react";
+import { Settings, Users, Plus } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { orpc, client } from "@/utils/orpc";
 import { useState } from "react";
 import { toast } from "sonner";
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
+} from "@/components/ui/dialog";
 
 export default function Configuracoes() {
     const [editingUser, setEditingUser] = useState<string | null>(null);
     const [editForm, setEditForm] = useState({ name: "", email: "" });
+    const [isCreateOpen, setIsCreateOpen] = useState(false);
+    const [newUserForm, setNewUserForm] = useState({ name: "", email: "", password: "" });
 
     const queryClient = useQueryClient();
 
@@ -48,6 +59,21 @@ export default function Configuracoes() {
         },
     });
 
+    const createUserMutation = useMutation({
+        mutationFn: async (data: { name: string; email: string; password: string }) => {
+            return await client.settings.createUser(data);
+        },
+        onSuccess: () => {
+            toast.success("Usuário criado com sucesso!");
+            queryClient.invalidateQueries({ queryKey: orpc.settings.getAllUsers.queryKey() });
+            setIsCreateOpen(false);
+            setNewUserForm({ name: "", email: "", password: "" });
+        },
+        onError: (error) => {
+            toast.error("Erro ao criar usuário: " + error.message);
+        },
+    });
+
     const handleEdit = (user: any) => {
         setEditingUser(user.id);
         setEditForm({ name: user.name, email: user.email });
@@ -61,6 +87,12 @@ export default function Configuracoes() {
         setEditingUser(null);
         setEditForm({ name: "", email: "" });
     };
+
+    const handleCreateUser = () => {
+        createUserMutation.mutate(newUserForm);
+    };
+
+    const canCreateUser = Boolean(newUserForm.name && newUserForm.email && newUserForm.password);
 
     return (
         <div className="space-y-6">
@@ -87,10 +119,68 @@ export default function Configuracoes() {
                     <Card className="p-6">
                         <div className="flex justify-between items-center mb-4">
                             <h3 className="text-lg font-semibold">Gerenciar Usuários</h3>
-                            <Button className="gap-2">
-                                <Plus className="h-4 w-4" />
-                                Novo Usuário
-                            </Button>
+                            <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+                                <DialogTrigger render={
+                                    <Button className="gap-2">
+                                        <Plus className="h-4 w-4" />
+                                        Novo Usuário
+                                    </Button>
+                                } />
+                                <DialogContent>
+                                    <DialogHeader>
+                                        <DialogTitle>Novo usuário</DialogTitle>
+                                        <DialogDescription>
+                                            Crie um novo usuário para acesso ao sistema.
+                                        </DialogDescription>
+                                    </DialogHeader>
+                                    <div className="space-y-4">
+                                        <div className="space-y-2">
+                                            <Label htmlFor="new-user-name">Nome</Label>
+                                            <Input
+                                                id="new-user-name"
+                                                value={newUserForm.name}
+                                                onChange={(e) => setNewUserForm((prev) => ({ ...prev, name: e.target.value }))}
+                                                placeholder="Nome completo"
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label htmlFor="new-user-email">Email</Label>
+                                            <Input
+                                                id="new-user-email"
+                                                value={newUserForm.email}
+                                                onChange={(e) => setNewUserForm((prev) => ({ ...prev, email: e.target.value }))}
+                                                placeholder="email@empresa.com"
+                                                type="email"
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label htmlFor="new-user-password">Senha</Label>
+                                            <Input
+                                                id="new-user-password"
+                                                value={newUserForm.password}
+                                                onChange={(e) => setNewUserForm((prev) => ({ ...prev, password: e.target.value }))}
+                                                placeholder="Senha forte"
+                                                type="password"
+                                            />
+                                        </div>
+                                    </div>
+                                    <DialogFooter>
+                                        <Button
+                                            variant="outline"
+                                            onClick={() => setIsCreateOpen(false)}
+                                            disabled={createUserMutation.isPending}
+                                        >
+                                            Cancelar
+                                        </Button>
+                                        <Button
+                                            onClick={handleCreateUser}
+                                            disabled={!canCreateUser || createUserMutation.isPending}
+                                        >
+                                            {createUserMutation.isPending ? "Criando..." : "Criar usuário"}
+                                        </Button>
+                                    </DialogFooter>
+                                </DialogContent>
+                            </Dialog>
                         </div>
 
                         {isLoading ? (

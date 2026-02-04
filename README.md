@@ -48,6 +48,27 @@ Este projeto usa PostgreSQL com Prisma.
 npm run db:push
 ```
 
+## Seed do Usuario Admin
+
+Para criar o usuario inicial `admin@gmail.com` usando o fluxo do Better Auth:
+
+1. Configure no `apps/server/.env`:
+
+   - `ADMIN_SEED_PASSWORD` com a senha desejada
+   - `BETTER_AUTH_URL` apontando para o servidor (ex: `http://localhost:3000`)
+
+2. Suba o servidor (necessario para o seed):
+
+```bash
+npm run dev:server
+```
+
+3. Execute o seed:
+
+```bash
+npm run db:seed
+```
+
 Então, execute o servidor de desenvolvimento:
 
 ```bash

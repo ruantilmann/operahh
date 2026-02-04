@@ -42,6 +42,9 @@
     "db:generate": {
       "cache": false
     },
+    "db:seed": {
+      "cache": false
+    },
     "db:start": {
       "cache": false,
       "persistent": true
