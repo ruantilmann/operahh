@@ -1,13 +1,18 @@
 "use client";
 
-"use client";
-
-import { useState } from "react";
+import { useState, type FormEvent } from "react";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Dialog,
   DialogContent,
@@ -33,38 +38,147 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Trash2, Plus, MoreHorizontal, Edit, Copy } from "lucide-react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { client, orpc } from "@/utils/orpc";
+import { toast } from "sonner";
 
 export default function BaseDeDadosPage() {
   const [isProductDialogOpen, setIsProductDialogOpen] = useState(false);
-  const [products, setProducts] = useState([
-    { id: 1, name: "Bolo de Chocolate", price: 45.00, category: "Bolos" },
-    { id: 2, name: "Brigadeiro Gourmet", price: 3.50, category: "Doces" },
-    { id: 3, name: "Torta de Limão", price: 38.00, category: "Tortas" },
-  ]);
+  const [isCategoryDialogOpen, setIsCategoryDialogOpen] = useState(false);
+  const [productForm, setProductForm] = useState({
+    name: "",
+    price: "",
+    categoryId: "",
+  });
+  const [categoryForm, setCategoryForm] = useState({
+    name: "",
+    type: "PRODUCT",
+  });
+  const queryClient = useQueryClient();
 
-  const handleAddProduct = (formData: FormData) => {
-    const newProduct = {
-      id: products.length + 1,
-      name: formData.get("name") as string,
-      price: parseFloat(formData.get("price") as string),
-      category: formData.get("category") as string,
-    };
-    setProducts([...products, newProduct]);
-    setIsProductDialogOpen(false);
+  const { data: productCategories, isLoading: isLoadingProductCategories } = useQuery(
+    orpc.categories.list.queryOptions({ input: { type: "PRODUCT" } })
+  );
+  const { data: stockCategories, isLoading: isLoadingStockCategories } = useQuery(
+    orpc.categories.list.queryOptions({ input: { type: "STOCK" } })
+  );
+  const { data: products, isLoading: isLoadingProducts } = useQuery(
+    orpc.products.list.queryOptions({})
+  );
+
+  const createProductMutation = useMutation({
+    mutationFn: async (data: { name: string; price: number; categoryId: string }) => {
+      return await client.products.create(data);
+    },
+    onSuccess: () => {
+      toast.success("Produto cadastrado com sucesso!");
+      queryClient.invalidateQueries({ queryKey: orpc.products.list.queryKey() });
+      setIsProductDialogOpen(false);
+      setProductForm({ name: "", price: "", categoryId: "" });
+    },
+    onError: (error) => {
+      toast.error("Erro ao cadastrar produto: " + error.message);
+    },
+  });
+
+  const deleteProductMutation = useMutation({
+    mutationFn: async (id: string) => {
+      return await client.products.delete({ id });
+    },
+    onSuccess: () => {
+      toast.success("Produto removido com sucesso!");
+      queryClient.invalidateQueries({ queryKey: orpc.products.list.queryKey() });
+    },
+    onError: (error) => {
+      toast.error("Erro ao remover produto: " + error.message);
+    },
+  });
+
+  const deleteCategoryMutation = useMutation({
+    mutationFn: async (id: string) => {
+      return await client.categories.delete({ id });
+    },
+    onSuccess: () => {
+      toast.success("Categoria removida com sucesso!");
+      queryClient.invalidateQueries({ queryKey: orpc.categories.list.queryKey({ input: { type: "PRODUCT" } }) });
+      queryClient.invalidateQueries({ queryKey: orpc.categories.list.queryKey({ input: { type: "STOCK" } }) });
+      queryClient.invalidateQueries({ queryKey: orpc.products.list.queryKey() });
+    },
+    onError: (error) => {
+      toast.error("Erro ao remover categoria: " + error.message);
+    },
+  });
+
+  const createCategoryMutation = useMutation({
+    mutationFn: async (data: { name: string; type: "PRODUCT" | "STOCK" }) => {
+      return await client.categories.create(data);
+    },
+    onSuccess: () => {
+      toast.success("Categoria cadastrada com sucesso!");
+      queryClient.invalidateQueries({ queryKey: orpc.categories.list.queryKey({ input: { type: "PRODUCT" } }) });
+      queryClient.invalidateQueries({ queryKey: orpc.categories.list.queryKey({ input: { type: "STOCK" } }) });
+      setIsCategoryDialogOpen(false);
+      setCategoryForm({ name: "", type: "PRODUCT" });
+    },
+    onError: (error) => {
+      toast.error("Erro ao cadastrar categoria: " + error.message);
+    },
+  });
+
+  const productsList = products ?? [];
+  const hasProductCategories = (productCategories?.length ?? 0) > 0;
+  const canSubmitProduct =
+    Boolean(productForm.name.trim()) &&
+    Boolean(productForm.price) &&
+    Boolean(productForm.categoryId) &&
+    !createProductMutation.isPending;
+  const canSubmitCategory = Boolean(categoryForm.name.trim()) && !createCategoryMutation.isPending;
+
+  const handleAddProduct = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    const price = Number(productForm.price);
+    if (!productForm.name.trim() || Number.isNaN(price) || price <= 0) {
+      toast.error("Preencha os dados do produto corretamente");
+      return;
+    }
+
+    if (!productForm.categoryId) {
+      toast.error("Selecione uma categoria de produto");
+      return;
+    }
+
+    createProductMutation.mutate({
+      name: productForm.name.trim(),
+      price,
+      categoryId: productForm.categoryId,
+    });
   };
 
-  const handleDeleteProduct = (id: number) => {
-    setProducts(products.filter(product => product.id !== id));
+  const handleAddCategory = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    if (!categoryForm.name.trim()) {
+      toast.error("Informe o nome da categoria");
+      return;
+    }
+
+    createCategoryMutation.mutate({
+      name: categoryForm.name.trim(),
+      type: categoryForm.type as "PRODUCT" | "STOCK",
+    });
   };
 
-  const handleDuplicateProduct = (product: { id: number; name: string; price: number; category: string }) => {
-    const duplicatedProduct = {
-      id: products.length + 1,
-      name: `${product.name} (Cópia)`,
+  const handleDeleteProduct = (id: string) => {
+    deleteProductMutation.mutate(id);
+  };
+
+  const handleDuplicateProduct = (product: { id: string; name: string; price: number; categoryId: string }) => {
+    createProductMutation.mutate({
+      name: `${product.name} (Copia)`,
       price: product.price,
-      category: product.category,
-    };
-    setProducts([...products, duplicatedProduct]);
+      categoryId: product.categoryId,
+    });
   };
 
   return (
@@ -178,39 +292,128 @@ export default function BaseDeDadosPage() {
 
         <TabsContent value="categorias" className="space-y-6 mt-6">
           <Card className="p-6">
-            <h3 className="text-lg font-semibold mb-4">Gestão de Categorias</h3>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold">Gestão de Categorias</h3>
+              <Dialog open={isCategoryDialogOpen} onOpenChange={setIsCategoryDialogOpen}>
+                <DialogTrigger render={
+                  <Button className="gap-2">
+                    <Plus className="h-4 w-4" />
+                    Adicionar Categoria
+                  </Button>
+                } />
+                <DialogContent className="sm:max-w-[425px]">
+                  <form onSubmit={handleAddCategory}>
+                    <DialogHeader>
+                      <DialogTitle>Adicionar Categoria</DialogTitle>
+                      <DialogDescription>
+                        Cadastre uma nova categoria de produtos ou estoque.
+                      </DialogDescription>
+                    </DialogHeader>
+                    <div className="grid gap-4 py-4">
+                      <div className="grid gap-2">
+                        <Label htmlFor="category-name">Nome da Categoria</Label>
+                        <Input
+                          id="category-name"
+                          value={categoryForm.name}
+                          onChange={(event) =>
+                            setCategoryForm((prev) => ({
+                              ...prev,
+                              name: event.target.value,
+                            }))
+                          }
+                          placeholder="Ex: Bolos"
+                          required
+                        />
+                      </div>
+                      <div className="grid gap-2">
+                        <Label>Tipo</Label>
+                        <Select
+                          value={categoryForm.type}
+                          onValueChange={(value) =>
+                            setCategoryForm((prev) => ({
+                              ...prev,
+                              type: (value ?? "PRODUCT") as "PRODUCT" | "STOCK",
+                            }))
+                          }
+                        >
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder="Selecione o tipo" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="PRODUCT">Categoria de Produtos</SelectItem>
+                            <SelectItem value="STOCK">Categoria de Estoque</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                    <DialogFooter>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => setIsCategoryDialogOpen(false)}
+                      >
+                        Cancelar
+                      </Button>
+                      <Button type="submit" disabled={!canSubmitCategory}>
+                        {createCategoryMutation.isPending ? "Salvando..." : "Salvar Categoria"}
+                      </Button>
+                    </DialogFooter>
+                  </form>
+                </DialogContent>
+              </Dialog>
+            </div>
             <div className="grid grid-cols-2 gap-4 mb-4">
               <div>
                 <Label>Categorias de Produtos</Label>
                 <div className="space-y-2 mt-2">
-                  {["Bolos", "Doces", "Tortas", "Salgados"].map((cat, index) => (
-                    <div
-                      key={index}
-                      className="flex items-center justify-between p-2 bg-secondary rounded"
-                    >
-                      <span className="text-sm">{cat}</span>
-                      <Button variant="ghost" size="sm">
-                        <Trash2 className="h-3 w-3" />
-                      </Button>
-                    </div>
-                  ))}
+                  {isLoadingProductCategories ? (
+                    <div className="text-sm text-muted-foreground">Carregando categorias...</div>
+                  ) : (productCategories?.length ?? 0) === 0 ? (
+                    <div className="text-sm text-muted-foreground">sem dados cadastrados</div>
+                  ) : (
+                    productCategories?.map((category) => (
+                      <div
+                        key={category.id}
+                        className="flex items-center justify-between p-2 bg-secondary rounded"
+                      >
+                        <span className="text-sm">{category.name}</span>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => deleteCategoryMutation.mutate(category.id)}
+                          disabled={deleteCategoryMutation.isPending}
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    ))
+                  )}
                 </div>
               </div>
               <div>
                 <Label>Categorias de Estoque</Label>
                 <div className="space-y-2 mt-2">
-                  {["Ingredientes Secos", "Laticínios", "Frutas"].map(
-                    (cat, index) => (
+                  {isLoadingStockCategories ? (
+                    <div className="text-sm text-muted-foreground">Carregando categorias...</div>
+                  ) : (stockCategories?.length ?? 0) === 0 ? (
+                    <div className="text-sm text-muted-foreground">sem dados cadastrados</div>
+                  ) : (
+                    stockCategories?.map((category) => (
                       <div
-                        key={index}
+                        key={category.id}
                         className="flex items-center justify-between p-2 bg-secondary rounded"
                       >
-                        <span className="text-sm">{cat}</span>
-                        <Button variant="ghost" size="sm">
+                        <span className="text-sm">{category.name}</span>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => deleteCategoryMutation.mutate(category.id)}
+                          disabled={deleteCategoryMutation.isPending}
+                        >
                           <Trash2 className="h-3 w-3" />
                         </Button>
                       </div>
-                    )
+                    ))
                   )}
                 </div>
               </div>
@@ -235,7 +438,7 @@ export default function BaseDeDadosPage() {
                   </Button>
                 } />
                 <DialogContent className="sm:max-w-[425px]">
-                  <form action={handleAddProduct}>
+                  <form onSubmit={handleAddProduct}>
                     <DialogHeader>
                       <DialogTitle>Adicionar Novo Produto</DialogTitle>
                       <DialogDescription>
@@ -249,6 +452,13 @@ export default function BaseDeDadosPage() {
                           id="name"
                           name="name"
                           placeholder="Ex: Bolo de Chocolate"
+                          value={productForm.name}
+                          onChange={(event) =>
+                            setProductForm((prev) => ({
+                              ...prev,
+                              name: event.target.value,
+                            }))
+                          }
                           required
                         />
                       </div>
@@ -260,24 +470,73 @@ export default function BaseDeDadosPage() {
                           type="number"
                           step="0.01"
                           placeholder="0,00"
+                          value={productForm.price}
+                          onChange={(event) =>
+                            setProductForm((prev) => ({
+                              ...prev,
+                              price: event.target.value,
+                            }))
+                          }
                           required
                         />
                       </div>
                       <div className="grid gap-2">
-                        <Label htmlFor="category">Categoria</Label>
-                        <Input
-                          id="category"
-                          name="category"
-                          placeholder="Ex: Bolos, Doces, Tortas"
-                          required
-                        />
+                        <Label>Categoria</Label>
+                        <Select
+                          value={productForm.categoryId}
+                          onValueChange={(value) =>
+                            setProductForm((prev) => ({
+                              ...prev,
+                              categoryId: value ?? "",
+                            }))
+                          }
+                        >
+                          <SelectTrigger className="w-full">
+                            <SelectValue
+                              placeholder={
+                                isLoadingProductCategories
+                                  ? "Carregando categorias..."
+                                  : "Selecione uma categoria"
+                              }
+                            >
+                              {(value) => {
+                                if (!value) {
+                                  return isLoadingProductCategories
+                                    ? "Carregando categorias..."
+                                    : "Selecione uma categoria"
+                                }
+
+                                const matchedCategory = productCategories?.find(
+                                  (category) => category.id === value
+                                )
+
+                                return matchedCategory?.name ?? String(value)
+                              }}
+                            </SelectValue>
+                          </SelectTrigger>
+                          <SelectContent>
+                            {hasProductCategories ? (
+                              productCategories?.map((category) => (
+                                <SelectItem key={category.id} value={category.id}>
+                                  {category.name}
+                                </SelectItem>
+                              ))
+                            ) : (
+                              <SelectItem value="__empty" disabled>
+                                sem dados cadastrados
+                              </SelectItem>
+                            )}
+                          </SelectContent>
+                        </Select>
                       </div>
                     </div>
                     <DialogFooter>
                       <Button type="button" variant="outline" onClick={() => setIsProductDialogOpen(false)}>
                         Cancelar
                       </Button>
-                      <Button type="submit">Salvar Produto</Button>
+                      <Button type="submit" disabled={!canSubmitProduct || !hasProductCategories}>
+                        {createProductMutation.isPending ? "Salvando..." : "Salvar Produto"}
+                      </Button>
                     </DialogFooter>
                   </form>
                 </DialogContent>
@@ -294,17 +553,23 @@ export default function BaseDeDadosPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {products.length === 0 ? (
+                {isLoadingProducts ? (
                   <TableRow>
                     <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
-                      Nenhum produto cadastrado ainda.
+                      Carregando produtos...
+                    </TableCell>
+                  </TableRow>
+                ) : productsList.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
+                      sem dados cadastrados
                     </TableCell>
                   </TableRow>
                 ) : (
-                  products.map((product) => (
+                  productsList.map((product) => (
                     <TableRow key={product.id}>
                       <TableCell className="font-medium">{product.name}</TableCell>
-                      <TableCell>{product.category}</TableCell>
+                      <TableCell>{product.category.name}</TableCell>
                       <TableCell>R$ {product.price.toFixed(2)}</TableCell>
                       <TableCell className="text-right">
                         <DropdownMenu>
