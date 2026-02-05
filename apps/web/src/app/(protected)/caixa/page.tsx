@@ -56,32 +56,12 @@ const mockExits = [
     },
 ];
 
-const entryCategoryLabels: Record<string, string> = {
-    vendas: "Vendas",
-    servicos: "Serviços",
-    aluguel: "Aluguel",
-    outros: "Outros",
-};
-
 const paymentLabels: Record<string, string> = {
     dinheiro: "Dinheiro",
     cartao: "Cartão",
     debito: "Débito",
     pix: "PIX",
     boleto: "Boleto",
-};
-
-const statusLabels: Record<string, string> = {
-    pendente: "Pendente",
-    pago: "Pago",
-    cancelado: "Cancelado",
-};
-
-const productCategoryLabels: Record<string, string> = {
-    doces: "Doces",
-    salgados: "Salgados",
-    bebidas: "Bebidas",
-    outros: "Outros",
 };
 
 const exitCategoryLabels: Record<string, string> = {
@@ -99,6 +79,7 @@ export default function Caixa() {
     const totalEntries = mockEntries.reduce((sum, entry) => sum + entry.total, 0);
     const totalExits = mockExits.reduce((sum, exit) => sum + exit.valor, 0);
     const balance = totalEntries - totalExits;
+    const today = new Date().toISOString().slice(0, 10);
 
     return (
         <div className="space-y-6">
@@ -175,40 +156,45 @@ export default function Caixa() {
                                             Registrar Entrada
                                         </DialogTitle>
                                     </DialogHeader>
-                                    <Tabs defaultValue="valor" className="w-full">
-                                        <TabsList className="grid w-full grid-cols-2">
-                                            <TabsTrigger value="lancamento-valor">Lançar Entrada</TabsTrigger>
-                                            <TabsTrigger value="lancamento-por-produto">Lançar por Produto</TabsTrigger>
+                                    <Tabs defaultValue="instadelivery" className="w-full">
+                                        <TabsList className="grid w-full grid-cols-3">
+                                            <TabsTrigger value="instadelivery">InstaDelivery</TabsTrigger>
+                                            <TabsTrigger value="ifood">Ifood</TabsTrigger>
+                                            <TabsTrigger value="manual">Manual</TabsTrigger>
                                         </TabsList>
-                                        
-                                        <TabsContent value="lancamento-valor" className="space-y-4 mt-4">
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+
+                                        <TabsContent value="instadelivery" className="space-y-4 mt-4">
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                 <div>
                                                     <Label>Data</Label>
-                                                    <Input type="date" />
+                                                    <Input type="date" defaultValue={today} />
                                                 </div>
                                                 <div>
-                                                    <Label>Valor</Label>
+                                                    <Label>Nome do Cliente</Label>
+                                                    <Input placeholder="Nome completo" />
+                                                </div>
+                                                <div>
+                                                    <Label>WhatsApp</Label>
+                                                    <Input placeholder="(00) 00000-0000" />
+                                                </div>
+                                                <div>
+                                                    <Label>Entrega/Retirada</Label>
+                                                    <Select>
+                                                        <SelectTrigger>
+                                                            <SelectValue placeholder="Selecione" />
+                                                        </SelectTrigger>
+                                                        <SelectContent>
+                                                            <SelectItem value="entrega">Entrega</SelectItem>
+                                                            <SelectItem value="retirada">Retirada</SelectItem>
+                                                        </SelectContent>
+                                                    </Select>
+                                                </div>
+                                                <div>
+                                                    <Label>Taxa de Entrega</Label>
                                                     <Input type="number" step="0.01" placeholder="R$ 0,00" />
                                                 </div>
                                                 <div>
-                                                    <Label>Categoria</Label>
-                                                        <Select>
-                                                        <SelectTrigger>
-                                                            <SelectValue placeholder="Selecione">
-                                                                {(value) => entryCategoryLabels[String(value)] ?? "Selecione"}
-                                                            </SelectValue>
-                                                        </SelectTrigger>
-                                                        <SelectContent>
-                                                            <SelectItem value="vendas">Vendas</SelectItem>
-                                                            <SelectItem value="servicos">Serviços</SelectItem>
-                                                            <SelectItem value="aluguel">Aluguel</SelectItem>
-                                                            <SelectItem value="outros">Outros</SelectItem>
-                                                        </SelectContent>
-                                                    </Select>
-                                                </div>
-                                                <div>
-                                                    <Label>Pagamento</Label>
+                                                    <Label>Forma de Pagamento</Label>
                                                     <Select>
                                                         <SelectTrigger>
                                                             <SelectValue placeholder="Selecione">
@@ -220,108 +206,40 @@ export default function Caixa() {
                                                             <SelectItem value="cartao">Cartão</SelectItem>
                                                             <SelectItem value="debito">Débito</SelectItem>
                                                             <SelectItem value="pix">PIX</SelectItem>
+                                                            <SelectItem value="boleto">Boleto</SelectItem>
                                                         </SelectContent>
                                                     </Select>
-                                                </div>
-                                                <div className="md:col-span-2">
-                                                    <Label>Descrição</Label>
-                                                    <Textarea placeholder="Descrição..." rows={2} />
                                                 </div>
                                                 <div>
-                                                    <Label>Situação</Label>
-                                                    <Select>
-                                                        <SelectTrigger>
-                                                            <SelectValue placeholder="Selecione">
-                                                                {(value) => statusLabels[String(value)] ?? "Selecione"}
-                                                            </SelectValue>
-                                                        </SelectTrigger>
-                                                        <SelectContent>
-                                                            <SelectItem value="pendente">Pendente</SelectItem>
-                                                            <SelectItem value="pago">Pago</SelectItem>
-                                                            <SelectItem value="cancelado">Cancelado</SelectItem>
-                                                        </SelectContent>
-                                                    </Select>
+                                                    <Label>Valor Pago</Label>
+                                                    <Input type="number" step="0.01" placeholder="R$ 0,00" />
+                                                </div>
+                                                <div className="md:col-span-2">
+                                                    <Label>Itens do Pedido</Label>
+                                                    <Textarea placeholder="Ex: 2x Brigadeiro (R$ 5,00), 1x Coxinha (R$ 7,00)" rows={3} />
+                                                </div>
+                                                <div className="md:col-span-2">
+                                                    <Label>Observacao</Label>
+                                                    <Textarea placeholder="Observacao adicional" rows={2} />
                                                 </div>
                                             </div>
                                             <div className="flex justify-end">
                                                 <Button size="lg" className="gap-2" onClick={() => setIsEntryModalOpen(false)}>
                                                     <ArrowUpRight className="h-4 w-4" />
-                                                    Registrar Entrada
+                                                    Salvar
                                                 </Button>
                                             </div>
                                         </TabsContent>
-                                        
-                                        <TabsContent value="lancamento-por-produto" className="space-y-4 mt-4">
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                                                <div>
-                                                    <Label>Data</Label>
-                                                    <Input type="date" />
-                                                </div>
-                                                <div>
-                                                    <Label>Produto</Label>
-                                                    <Input placeholder="Nome do produto" />
-                                                </div>
-                                                <div>
-                                                    <Label>Quantidade</Label>
-                                                    <Input type="number" placeholder="0" />
-                                                </div>
-                                                <div>
-                                                    <Label>Categoria</Label>
-                                                    <Select>
-                                                        <SelectTrigger>
-                                                            <SelectValue placeholder="Selecione">
-                                                                {(value) => productCategoryLabels[String(value)] ?? "Selecione"}
-                                                            </SelectValue>
-                                                        </SelectTrigger>
-                                                        <SelectContent>
-                                                            <SelectItem value="doces">Doces</SelectItem>
-                                                            <SelectItem value="salgados">Salgados</SelectItem>
-                                                            <SelectItem value="bebidas">Bebidas</SelectItem>
-                                                            <SelectItem value="outros">Outros</SelectItem>
-                                                        </SelectContent>
-                                                    </Select>
-                                                </div>
-                                                <div className="md:col-span-2">
-                                                    <Label>Descrição</Label>
-                                                    <Textarea placeholder="Descrição do produto..." rows={2} />
-                                                </div>
-                                                <div>
-                                                    <Label>Pagamento</Label>
-                                                    <Select>
-                                                        <SelectTrigger>
-                                                            <SelectValue placeholder="Selecione">
-                                                                {(value) => paymentLabels[String(value)] ?? "Selecione"}
-                                                            </SelectValue>
-                                                        </SelectTrigger>
-                                                        <SelectContent>
-                                                            <SelectItem value="dinheiro">Dinheiro</SelectItem>
-                                                            <SelectItem value="cartao">Cartão</SelectItem>
-                                                            <SelectItem value="debito">Débito</SelectItem>
-                                                            <SelectItem value="pix">PIX</SelectItem>
-                                                        </SelectContent>
-                                                    </Select>
-                                                </div>
-                                                <div>
-                                                    <Label>Situação</Label>
-                                                    <Select>
-                                                        <SelectTrigger>
-                                                            <SelectValue placeholder="Selecione">
-                                                                {(value) => statusLabels[String(value)] ?? "Selecione"}
-                                                            </SelectValue>
-                                                        </SelectTrigger>
-                                                        <SelectContent>
-                                                            <SelectItem value="pendente">Pendente</SelectItem>
-                                                            <SelectItem value="pago">Pago</SelectItem>
-                                                            <SelectItem value="cancelado">Cancelado</SelectItem>
-                                                        </SelectContent>
-                                                    </Select>
-                                                </div>
+
+                                        <TabsContent value="ifood" className="space-y-4 mt-4">
+                                            <div className="rounded-lg border border-dashed border-muted-foreground/40 p-4 text-sm text-muted-foreground">
+                                                Conteudo generico para entrada via Ifood. Placeholder temporario para definirmos os campos.
                                             </div>
-                                            <div className="flex justify-end">
-                                                <Button size="lg" className="gap-2" onClick={() => setIsEntryModalOpen(false)}>
-                                                    <ArrowUpRight className="h-4 w-4" />
-                                                    Registrar Entrada
-                                                </Button>
+                                        </TabsContent>
+
+                                        <TabsContent value="manual" className="space-y-4 mt-4">
+                                            <div className="rounded-lg border border-dashed border-muted-foreground/40 p-4 text-sm text-muted-foreground">
+                                                Conteudo generico para entrada manual. Podemos adicionar campos e validacoes depois.
                                             </div>
                                         </TabsContent>
                                     </Tabs>
