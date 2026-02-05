@@ -1,82 +1,87 @@
 # operahh
 
-Este projeto foi criado com [Better-T-Stack](https://github.com/AmanVarshney01/create-better-t-stack), uma pilha moderna de TypeScript que combina Next.js, Fastify, ORPC e mais.
+Este projeto foi criado com [Better-T-Stack](https://github.com/AmanVarshney01/create-better-t-stack), uma pilha moderna de TypeScript que combina Next.js, Fastify, oRPC e mais. Este README foca no onboarding local, incluindo preparo de ambiente, variaveis de ambiente e banco com Docker.
 
-## Recursos
+## Tecnologias
 
-- **TypeScript** - Para segurança de tipo e experiência de desenvolvedor aprimorada
-- **Next.js** - Framework React full-stack
-- **TailwindCSS** - CSS orientado a utilitários para desenvolvimento rápido de UI
-- **shadcn/ui** - Componentes de interface reutilizáveis
-- **Fastify** - Framework web rápido e com baixa sobrecarga
-- **oRPC** - APIs com tipagem segura de ponta a ponta com integração OpenAPI
-- **Node.js** - Ambiente de execução
-- **Prisma** - ORM orientado a TypeScript
-- **PostgreSQL** - Motor de banco de dados
-- **Autenticação** - Better-Auth
-- **PWA** - Suporte a aplicativo web progressivo
-- **Turborepo** - Sistema de compilação de monorepo otimizado
+- **TypeScript** - Tipagem estatica e melhor DX
+- **Next.js** - Frontend React full-stack
+- **Fastify** - Backend HTTP rapido e leve
+- **oRPC** - API tipada de ponta a ponta com suporte a OpenAPI
+- **Tailwind CSS** - Estilizacao utilitaria
+- **shadcn/ui** - Componentes de UI reutilizaveis
+- **Prisma** - ORM e toolkit de banco
+- **PostgreSQL** - Banco de dados relacional
+- **Better Auth** - Autenticacao
+- **Turborepo** - Monorepo com build otimizado
+- **PWA** - Suporte a Progressive Web App
 
-## Começando
+## Requisitos
 
-Primeiro, instale as dependências:
+- **Node.js** (recomendado 20+) e **npm** (o repo usa `npm@11.6.2`)
+- **Docker Desktop** ou Docker Engine com Compose habilitado
+- Git
 
-```bash
-npm install
-```
+## Onboarding local (passo a passo)
 
-## Configuração do Banco de Dados
-
-Este projeto usa PostgreSQL com Prisma.
-
-1. Certifique-se de ter um banco de dados PostgreSQL configurado (você pode usar o docker-compose.yml em `packages/db/` para iniciar uma instância local).
-2. Configure as variáveis de ambiente necessárias:
-
-   - Em `packages/db/.env`, defina as credenciais do banco de dados
-
-   - Em `apps/server/.env`, defina a URL do banco de dados
-
-3. Se você quiser usar o docker-compose para iniciar o banco de dados localmente, execute:
+1. **Instale dependencias**
    ```bash
-   cd packages/db
+   npm install
+   ```
+
+2. **Configure variaveis de ambiente**
+   - Copie os arquivos de exemplo:
+     ```bash
+     # Windows (CMD)
+     copy apps\server\.env.example apps\server\.env
+     copy packages\db\.env.example packages\db\.env
+     ```
+     ```bash
+     # macOS/Linux
+     cp apps/server/.env.example apps/server/.env
+     cp packages/db/.env.example packages/db/.env
+     ```
+   - Ajuste as variaveis principais:
+     - `packages/db/.env`: `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB`
+     - `apps/server/.env`: `DATABASE_URL` deve refletir as mesmas credenciais
+     - `apps/web/.env`: confirme `NEXT_PUBLIC_SERVER_URL` (padrao `http://localhost:3000`)
+
+3. **Suba o banco com Docker**
+   ```bash
    npm run db:start
    ```
 
-4. Aplique o esquema ao seu banco de dados:
+4. **Crie e aplique migrations do Prisma**
+   ```bash
+   npm run db:migrate
+   ```
 
-```bash
-npm run db:push
-```
+5. **Inicie o ambiente de desenvolvimento**
+   ```bash
+   npm run dev
+   ```
 
-## Seed do Usuario Admin
+6. **Acesse**
+   - Web: `http://localhost:3001`
+   - API: `http://localhost:3000`
+
+## Seed do usuario admin (opcional)
 
 Para criar o usuario inicial `admin@gmail.com` usando o fluxo do Better Auth:
 
 1. Configure no `apps/server/.env`:
-
    - `ADMIN_SEED_PASSWORD` com a senha desejada
    - `BETTER_AUTH_URL` apontando para o servidor (ex: `http://localhost:3000`)
 
 2. Suba o servidor (necessario para o seed):
-
-```bash
-npm run dev:server
-```
+   ```bash
+   npm run dev:server
+   ```
 
 3. Execute o seed:
-
-```bash
-npm run db:seed
-```
-
-Então, execute o servidor de desenvolvimento:
-
-```bash
-npm run dev
-```
-
-Abra [http://localhost:3001](http://localhost:3001) no seu navegador para ver o aplicativo web.
-A API está rodando em [http://localhost:3000](http://localhost:3000).
+   ```bash
+   npm run db:seed
+   ```
 
 ## Estrutura do Projeto
 
@@ -98,6 +103,7 @@ operahh/
 - `npm run dev:web`: Iniciar apenas o aplicativo web
 - `npm run dev:server`: Iniciar apenas o servidor
 - `npm run check-types`: Verificar tipos do TypeScript em todos os aplicativos
-- `npm run db:push`: Enviar alterações de esquema para o banco de dados
+- `npm run db:migrate`: Criar e aplicar migrations no banco de dados
+- `npm run db:push`: Aplicar schema diretamente (uso pontual/rapido)
 - `npm run db:studio`: Abrir a interface do estúdio do banco de dados
 - `cd apps/web && npm run generate-pwa-assets`: Gerar recursos do PWA
