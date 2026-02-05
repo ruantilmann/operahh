@@ -29,15 +29,11 @@ import {
     TableHeader,
     TableRow,
 } from "@/components/ui/table";
-import { Wallet, ArrowUpRight, ArrowDownRight, Plus } from "lucide-react";
+import { Wallet, ArrowUpRight, ArrowDownRight, Plus, Edit, Trash2 } from "lucide-react";
 import { format } from "date-fns";
-import { useQuery } from "@tanstack/react-query";
-import { orpc } from "@/utils/orpc";
-
-const mockEntries = [
-    { data: "2025-11-18", total: 3245.0, observacao: "Vendas do dia" },
-    { data: "2025-11-17", total: 2150.0, observacao: "" },
-];
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { client, orpc } from "@/utils/orpc";
+import { toast } from "sonner";
 
 const mockExits = [
     {
@@ -66,6 +62,18 @@ const paymentLabels: Record<string, string> = {
     boleto: "Boleto",
 };
 
+const statusLabels: Record<string, string> = {
+    pendente: "Pendente",
+    pago: "Pago",
+    cancelado: "Cancelado",
+};
+
+const fulfillmentLabels: Record<string, string> = {
+    entrega: "Entrega",
+    retirada: "Retirada",
+};
+
+
 const exitCategoryLabels: Record<string, string> = {
     materia: "Matéria-prima",
     energia: "Energia",
@@ -78,18 +86,267 @@ const exitCategoryLabels: Record<string, string> = {
 export default function Caixa() {
     const [isEntryModalOpen, setIsEntryModalOpen] = useState(false);
     const [isExitModalOpen, setIsExitModalOpen] = useState(false);
+    const today = new Date().toISOString().slice(0, 10);
     const [instaItems, setInstaItems] = useState([{ productId: "", quantity: "1" }]);
     const [ifoodItems, setIfoodItems] = useState([{ productId: "", quantity: "1" }]);
     const [manualItems, setManualItems] = useState([{ productId: "", quantity: "1" }]);
-    const totalEntries = mockEntries.reduce((sum, entry) => sum + entry.total, 0);
-    const totalExits = mockExits.reduce((sum, exit) => sum + exit.valor, 0);
-    const balance = totalEntries - totalExits;
-    const today = new Date().toISOString().slice(0, 10);
+    const [instaForm, setInstaForm] = useState({
+        date: today,
+        customerName: "",
+        whatsapp: "",
+        fulfillmentType: "",
+        deliveryFee: "",
+        paymentMethod: "",
+        amountPaid: "",
+        status: "pago",
+        notes: "",
+    });
+    const [ifoodForm, setIfoodForm] = useState({
+        date: today,
+        customerName: "",
+        whatsapp: "",
+        fulfillmentType: "",
+        deliveryFee: "",
+        paymentMethod: "",
+        amountPaid: "",
+        status: "pago",
+        notes: "",
+    });
+    const [manualForm, setManualForm] = useState({
+        date: today,
+        customerName: "",
+        whatsapp: "",
+        fulfillmentType: "",
+        deliveryFee: "",
+        paymentMethod: "",
+        amountPaid: "",
+        status: "pago",
+        notes: "",
+    });
     const { data: products, isLoading: isLoadingProducts } = useQuery(
         orpc.products.list.queryOptions({})
     );
+    const { data: instadeliveryEntries, isLoading: isLoadingInstadeliveryEntries } = useQuery(
+        orpc.instadeliveryEntries.list.queryOptions({})
+    );
+    const { data: ifoodEntries, isLoading: isLoadingIfoodEntries } = useQuery(
+        orpc.ifoodEntries.list.queryOptions({})
+    );
+    const { data: manualEntries, isLoading: isLoadingManualEntries } = useQuery(
+        orpc.manualEntries.list.queryOptions({})
+    );
     const productsList = products ?? [];
     const hasProducts = productsList.length > 0;
+    const combinedEntries = [
+        ...(instadeliveryEntries ?? []).map((entry) => ({ ...entry, source: "instadelivery" })),
+        ...(ifoodEntries ?? []).map((entry) => ({ ...entry, source: "ifood" })),
+        ...(manualEntries ?? []).map((entry) => ({ ...entry, source: "manual" })),
+    ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    const isEntriesLoading =
+        isLoadingInstadeliveryEntries || isLoadingIfoodEntries || isLoadingManualEntries;
+    const totalEntries = combinedEntries.reduce((sum, entry) => sum + entry.amountPaid, 0);
+    const totalExits = mockExits.reduce((sum, exit) => sum + exit.valor, 0);
+    const balance = totalEntries - totalExits;
+
+    const createInstadeliveryEntry = useMutation({
+        mutationFn: async (payload: {
+            date: string;
+            customerName: string;
+            whatsapp: string;
+            fulfillmentType: "entrega" | "retirada";
+            deliveryFee: number;
+            paymentMethod: "dinheiro" | "cartao" | "debito" | "pix" | "boleto";
+            amountPaid: number;
+            status: "pendente" | "pago" | "cancelado";
+            notes?: string;
+            items: { productId: string; quantity: number }[];
+        }) => client.instadeliveryEntries.create(payload),
+        onSuccess: () => {
+            toast.success("Entrada InstaDelivery salva!");
+            setIsEntryModalOpen(false);
+            setInstaForm({
+                date: today,
+                customerName: "",
+                whatsapp: "",
+                fulfillmentType: "",
+                deliveryFee: "",
+                paymentMethod: "",
+                amountPaid: "",
+                status: "pago",
+                notes: "",
+            });
+            setInstaItems([{ productId: "", quantity: "1" }]);
+        },
+        onError: (error) => {
+            toast.error(`Erro ao salvar entrada InstaDelivery: ${error.message}`);
+        },
+    });
+
+    const createIfoodEntry = useMutation({
+        mutationFn: async (payload: {
+            date: string;
+            customerName: string;
+            whatsapp: string;
+            fulfillmentType: "entrega" | "retirada";
+            deliveryFee: number;
+            paymentMethod: "dinheiro" | "cartao" | "debito" | "pix" | "boleto";
+            amountPaid: number;
+            status: "pendente" | "pago" | "cancelado";
+            notes?: string;
+            items: { productId: string; quantity: number }[];
+        }) => client.ifoodEntries.create(payload),
+        onSuccess: () => {
+            toast.success("Entrada Ifood salva!");
+            setIsEntryModalOpen(false);
+            setIfoodForm({
+                date: today,
+                customerName: "",
+                whatsapp: "",
+                fulfillmentType: "",
+                deliveryFee: "",
+                paymentMethod: "",
+                amountPaid: "",
+                status: "pago",
+                notes: "",
+            });
+            setIfoodItems([{ productId: "", quantity: "1" }]);
+        },
+        onError: (error) => {
+            toast.error(`Erro ao salvar entrada Ifood: ${error.message}`);
+        },
+    });
+
+    const createManualEntry = useMutation({
+        mutationFn: async (payload: {
+            date: string;
+            customerName: string;
+            whatsapp: string;
+            fulfillmentType: "entrega" | "retirada";
+            deliveryFee: number;
+            paymentMethod: "dinheiro" | "cartao" | "debito" | "pix" | "boleto";
+            amountPaid: number;
+            status: "pendente" | "pago" | "cancelado";
+            notes?: string;
+            items: { productId: string; quantity: number }[];
+        }) => client.manualEntries.create(payload),
+        onSuccess: () => {
+            toast.success("Entrada Manual salva!");
+            setIsEntryModalOpen(false);
+            setManualForm({
+                date: today,
+                customerName: "",
+                whatsapp: "",
+                fulfillmentType: "",
+                deliveryFee: "",
+                paymentMethod: "",
+                amountPaid: "",
+                status: "pago",
+                notes: "",
+            });
+            setManualItems([{ productId: "", quantity: "1" }]);
+        },
+        onError: (error) => {
+            toast.error(`Erro ao salvar entrada Manual: ${error.message}`);
+        },
+    });
+
+    const buildItemsPayload = (items: { productId: string; quantity: string }[]) =>
+        items
+            .map((item) => ({
+                productId: item.productId,
+                quantity: Number(item.quantity),
+            }))
+            .filter((item) => item.productId && item.quantity > 0);
+
+    const validateItems = (items: { productId: string; quantity: string }[]) => {
+        if (items.length === 0) {
+            toast.error("Adicione pelo menos um produto.");
+            return false;
+        }
+
+        const hasInvalidItem = items.some(
+            (item) => !item.productId || Number(item.quantity) <= 0
+        );
+
+        if (hasInvalidItem) {
+            toast.error("Preencha produto e quantidade em todos os itens.");
+            return false;
+        }
+
+        return true;
+    };
+
+    const handleSaveInstadelivery = () => {
+        if (!validateItems(instaItems)) {
+            return;
+        }
+
+        createInstadeliveryEntry.mutate({
+            date: instaForm.date,
+            customerName: instaForm.customerName.trim(),
+            whatsapp: instaForm.whatsapp.trim(),
+            fulfillmentType: instaForm.fulfillmentType as "entrega" | "retirada",
+            deliveryFee: Number(instaForm.deliveryFee) || 0,
+            paymentMethod: instaForm.paymentMethod as
+                | "dinheiro"
+                | "cartao"
+                | "debito"
+                | "pix"
+                | "boleto",
+            amountPaid: Number(instaForm.amountPaid) || 0,
+            status: instaForm.status as "pendente" | "pago" | "cancelado",
+            notes: instaForm.notes.trim() ? instaForm.notes.trim() : undefined,
+            items: buildItemsPayload(instaItems),
+        });
+    };
+
+    const handleSaveIfood = () => {
+        if (!validateItems(ifoodItems)) {
+            return;
+        }
+
+        createIfoodEntry.mutate({
+            date: ifoodForm.date,
+            customerName: ifoodForm.customerName.trim(),
+            whatsapp: ifoodForm.whatsapp.trim(),
+            fulfillmentType: ifoodForm.fulfillmentType as "entrega" | "retirada",
+            deliveryFee: Number(ifoodForm.deliveryFee) || 0,
+            paymentMethod: ifoodForm.paymentMethod as
+                | "dinheiro"
+                | "cartao"
+                | "debito"
+                | "pix"
+                | "boleto",
+            amountPaid: Number(ifoodForm.amountPaid) || 0,
+            status: ifoodForm.status as "pendente" | "pago" | "cancelado",
+            notes: ifoodForm.notes.trim() ? ifoodForm.notes.trim() : undefined,
+            items: buildItemsPayload(ifoodItems),
+        });
+    };
+
+    const handleSaveManual = () => {
+        if (!validateItems(manualItems)) {
+            return;
+        }
+
+        createManualEntry.mutate({
+            date: manualForm.date,
+            customerName: manualForm.customerName.trim(),
+            whatsapp: manualForm.whatsapp.trim(),
+            fulfillmentType: manualForm.fulfillmentType as "entrega" | "retirada",
+            deliveryFee: Number(manualForm.deliveryFee) || 0,
+            paymentMethod: manualForm.paymentMethod as
+                | "dinheiro"
+                | "cartao"
+                | "debito"
+                | "pix"
+                | "boleto",
+            amountPaid: Number(manualForm.amountPaid) || 0,
+            status: manualForm.status as "pendente" | "pago" | "cancelado",
+            notes: manualForm.notes.trim() ? manualForm.notes.trim() : undefined,
+            items: buildItemsPayload(manualItems),
+        });
+    };
 
     const renderOrderItems = (
         items: { productId: string; quantity: string }[],
@@ -118,7 +375,7 @@ export default function Caixa() {
                                             : "Selecione um produto"
                                     }
                                 >
-                                    {(value) => {
+                                    {(value: string) => {
                                         if (!value) {
                                             return isLoadingProducts
                                                 ? "Carregando produtos..."
@@ -271,19 +528,54 @@ export default function Caixa() {
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                 <div>
                                                     <Label>Data</Label>
-                                                    <Input type="date" defaultValue={today} />
+                                                    <Input
+                                                        type="date"
+                                                        value={instaForm.date}
+                                                        onChange={(event) =>
+                                                            setInstaForm((prev) => ({
+                                                                ...prev,
+                                                                date: event.target.value,
+                                                            }))
+                                                        }
+                                                    />
                                                 </div>
                                                 <div>
                                                     <Label>Nome do Cliente</Label>
-                                                    <Input placeholder="Nome completo" />
+                                                    <Input
+                                                        placeholder="Nome completo"
+                                                        value={instaForm.customerName}
+                                                        onChange={(event) =>
+                                                            setInstaForm((prev) => ({
+                                                                ...prev,
+                                                                customerName: event.target.value,
+                                                            }))
+                                                        }
+                                                    />
                                                 </div>
                                                 <div>
                                                     <Label>WhatsApp</Label>
-                                                    <Input placeholder="(00) 00000-0000" />
+                                                    <Input
+                                                        placeholder="(00) 00000-0000"
+                                                        value={instaForm.whatsapp}
+                                                        onChange={(event) =>
+                                                            setInstaForm((prev) => ({
+                                                                ...prev,
+                                                                whatsapp: event.target.value,
+                                                            }))
+                                                        }
+                                                    />
                                                 </div>
                                                 <div>
                                                     <Label>Entrega/Retirada</Label>
-                                                    <Select>
+                                                    <Select
+                                                        value={instaForm.fulfillmentType}
+                                                        onValueChange={(value) =>
+                                                            setInstaForm((prev) => ({
+                                                                ...prev,
+                                                                fulfillmentType: value ?? "",
+                                                            }))
+                                                        }
+                                                    >
                                                         <SelectTrigger>
                                                             <SelectValue placeholder="Selecione" />
                                                         </SelectTrigger>
@@ -295,14 +587,35 @@ export default function Caixa() {
                                                 </div>
                                                 <div>
                                                     <Label>Taxa de Entrega</Label>
-                                                    <Input type="number" step="0.01" placeholder="R$ 0,00" />
+                                                    <Input
+                                                        type="number"
+                                                        step="0.01"
+                                                        placeholder="R$ 0,00"
+                                                        value={instaForm.deliveryFee}
+                                                        onChange={(event) =>
+                                                            setInstaForm((prev) => ({
+                                                                ...prev,
+                                                                deliveryFee: event.target.value,
+                                                            }))
+                                                        }
+                                                    />
                                                 </div>
                                                 <div>
                                                     <Label>Forma de Pagamento</Label>
-                                                    <Select>
+                                                    <Select
+                                                        value={instaForm.paymentMethod}
+                                                        onValueChange={(value) =>
+                                                            setInstaForm((prev) => ({
+                                                                ...prev,
+                                                                paymentMethod: value ?? "",
+                                                            }))
+                                                        }
+                                                    >
                                                         <SelectTrigger>
                                                             <SelectValue placeholder="Selecione">
-                                                                {(value) => paymentLabels[String(value)] ?? "Selecione"}
+                                                                {(value: string) =>
+                                                                    paymentLabels[String(value)] ?? "Selecione"
+                                                                }
                                                             </SelectValue>
                                                         </SelectTrigger>
                                                         <SelectContent>
@@ -316,7 +629,43 @@ export default function Caixa() {
                                                 </div>
                                                 <div>
                                                     <Label>Valor Pago</Label>
-                                                    <Input type="number" step="0.01" placeholder="R$ 0,00" />
+                                                    <Input
+                                                        type="number"
+                                                        step="0.01"
+                                                        placeholder="R$ 0,00"
+                                                        value={instaForm.amountPaid}
+                                                        onChange={(event) =>
+                                                            setInstaForm((prev) => ({
+                                                                ...prev,
+                                                                amountPaid: event.target.value,
+                                                            }))
+                                                        }
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <Label>Status</Label>
+                                                    <Select
+                                                        value={instaForm.status}
+                                                        onValueChange={(value) =>
+                                                            setInstaForm((prev) => ({
+                                                                ...prev,
+                                                                status: value ?? "pago",
+                                                            }))
+                                                        }
+                                                    >
+                                                        <SelectTrigger>
+                                                            <SelectValue placeholder="Selecione">
+                                                                {(value: string) =>
+                                                                    statusLabels[String(value)] ?? "Selecione"
+                                                                }
+                                                            </SelectValue>
+                                                        </SelectTrigger>
+                                                        <SelectContent>
+                                                            <SelectItem value="pendente">Pendente</SelectItem>
+                                                            <SelectItem value="pago">Pago</SelectItem>
+                                                            <SelectItem value="cancelado">Cancelado</SelectItem>
+                                                        </SelectContent>
+                                                    </Select>
                                                 </div>
                                                 <div className="md:col-span-2">
                                                     <Label>Itens do Pedido</Label>
@@ -326,13 +675,28 @@ export default function Caixa() {
                                                 </div>
                                                 <div className="md:col-span-2">
                                                     <Label>Observacao</Label>
-                                                    <Textarea placeholder="Observacao adicional" rows={2} />
+                                                    <Textarea
+                                                        placeholder="Observacao adicional"
+                                                        rows={2}
+                                                        value={instaForm.notes}
+                                                        onChange={(event) =>
+                                                            setInstaForm((prev) => ({
+                                                                ...prev,
+                                                                notes: event.target.value,
+                                                            }))
+                                                        }
+                                                    />
                                                 </div>
                                             </div>
                                             <div className="flex justify-end">
-                                                <Button size="lg" className="gap-2" onClick={() => setIsEntryModalOpen(false)}>
+                                                <Button
+                                                    size="lg"
+                                                    className="gap-2"
+                                                    onClick={handleSaveInstadelivery}
+                                                    disabled={createInstadeliveryEntry.isPending}
+                                                >
                                                     <ArrowUpRight className="h-4 w-4" />
-                                                    Salvar
+                                                    {createInstadeliveryEntry.isPending ? "Salvando..." : "Salvar"}
                                                 </Button>
                                             </div>
                                         </TabsContent>
@@ -341,19 +705,54 @@ export default function Caixa() {
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                 <div>
                                                     <Label>Data</Label>
-                                                    <Input type="date" defaultValue={today} />
+                                                    <Input
+                                                        type="date"
+                                                        value={ifoodForm.date}
+                                                        onChange={(event) =>
+                                                            setIfoodForm((prev) => ({
+                                                                ...prev,
+                                                                date: event.target.value,
+                                                            }))
+                                                        }
+                                                    />
                                                 </div>
                                                 <div>
                                                     <Label>Nome do Cliente</Label>
-                                                    <Input placeholder="Nome completo" />
+                                                    <Input
+                                                        placeholder="Nome completo"
+                                                        value={ifoodForm.customerName}
+                                                        onChange={(event) =>
+                                                            setIfoodForm((prev) => ({
+                                                                ...prev,
+                                                                customerName: event.target.value,
+                                                            }))
+                                                        }
+                                                    />
                                                 </div>
                                                 <div>
                                                     <Label>WhatsApp</Label>
-                                                    <Input placeholder="(00) 00000-0000" />
+                                                    <Input
+                                                        placeholder="(00) 00000-0000"
+                                                        value={ifoodForm.whatsapp}
+                                                        onChange={(event) =>
+                                                            setIfoodForm((prev) => ({
+                                                                ...prev,
+                                                                whatsapp: event.target.value,
+                                                            }))
+                                                        }
+                                                    />
                                                 </div>
                                                 <div>
                                                     <Label>Entrega/Retirada</Label>
-                                                    <Select>
+                                                    <Select
+                                                        value={ifoodForm.fulfillmentType}
+                                                        onValueChange={(value) =>
+                                                            setIfoodForm((prev) => ({
+                                                                ...prev,
+                                                                fulfillmentType: value ?? "",
+                                                            }))
+                                                        }
+                                                    >
                                                         <SelectTrigger>
                                                             <SelectValue placeholder="Selecione" />
                                                         </SelectTrigger>
@@ -365,14 +764,35 @@ export default function Caixa() {
                                                 </div>
                                                 <div>
                                                     <Label>Taxa de Entrega</Label>
-                                                    <Input type="number" step="0.01" placeholder="R$ 0,00" />
+                                                    <Input
+                                                        type="number"
+                                                        step="0.01"
+                                                        placeholder="R$ 0,00"
+                                                        value={ifoodForm.deliveryFee}
+                                                        onChange={(event) =>
+                                                            setIfoodForm((prev) => ({
+                                                                ...prev,
+                                                                deliveryFee: event.target.value,
+                                                            }))
+                                                        }
+                                                    />
                                                 </div>
                                                 <div>
                                                     <Label>Forma de Pagamento</Label>
-                                                    <Select>
+                                                    <Select
+                                                        value={ifoodForm.paymentMethod}
+                                                        onValueChange={(value) =>
+                                                            setIfoodForm((prev) => ({
+                                                                ...prev,
+                                                                paymentMethod: value ?? "",
+                                                            }))
+                                                        }
+                                                    >
                                                         <SelectTrigger>
                                                             <SelectValue placeholder="Selecione">
-                                                                {(value) => paymentLabels[String(value)] ?? "Selecione"}
+                                                                {(value: string) =>
+                                                                    paymentLabels[String(value)] ?? "Selecione"
+                                                                }
                                                             </SelectValue>
                                                         </SelectTrigger>
                                                         <SelectContent>
@@ -386,7 +806,43 @@ export default function Caixa() {
                                                 </div>
                                                 <div>
                                                     <Label>Valor Pago</Label>
-                                                    <Input type="number" step="0.01" placeholder="R$ 0,00" />
+                                                    <Input
+                                                        type="number"
+                                                        step="0.01"
+                                                        placeholder="R$ 0,00"
+                                                        value={ifoodForm.amountPaid}
+                                                        onChange={(event) =>
+                                                            setIfoodForm((prev) => ({
+                                                                ...prev,
+                                                                amountPaid: event.target.value,
+                                                            }))
+                                                        }
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <Label>Status</Label>
+                                                    <Select
+                                                        value={ifoodForm.status}
+                                                        onValueChange={(value) =>
+                                                            setIfoodForm((prev) => ({
+                                                                ...prev,
+                                                                status: value ?? "pago",
+                                                            }))
+                                                        }
+                                                    >
+                                                        <SelectTrigger>
+                                                            <SelectValue placeholder="Selecione">
+                                                                {(value: string) =>
+                                                                    statusLabels[String(value)] ?? "Selecione"
+                                                                }
+                                                            </SelectValue>
+                                                        </SelectTrigger>
+                                                        <SelectContent>
+                                                            <SelectItem value="pendente">Pendente</SelectItem>
+                                                            <SelectItem value="pago">Pago</SelectItem>
+                                                            <SelectItem value="cancelado">Cancelado</SelectItem>
+                                                        </SelectContent>
+                                                    </Select>
                                                 </div>
                                                 <div className="md:col-span-2">
                                                     <Label>Itens do Pedido</Label>
@@ -396,13 +852,28 @@ export default function Caixa() {
                                                 </div>
                                                 <div className="md:col-span-2">
                                                     <Label>Observacao</Label>
-                                                    <Textarea placeholder="Observacao adicional" rows={2} />
+                                                    <Textarea
+                                                        placeholder="Observacao adicional"
+                                                        rows={2}
+                                                        value={ifoodForm.notes}
+                                                        onChange={(event) =>
+                                                            setIfoodForm((prev) => ({
+                                                                ...prev,
+                                                                notes: event.target.value,
+                                                            }))
+                                                        }
+                                                    />
                                                 </div>
                                             </div>
                                             <div className="flex justify-end">
-                                                <Button size="lg" className="gap-2" onClick={() => setIsEntryModalOpen(false)}>
+                                                <Button
+                                                    size="lg"
+                                                    className="gap-2"
+                                                    onClick={handleSaveIfood}
+                                                    disabled={createIfoodEntry.isPending}
+                                                >
                                                     <ArrowUpRight className="h-4 w-4" />
-                                                    Salvar
+                                                    {createIfoodEntry.isPending ? "Salvando..." : "Salvar"}
                                                 </Button>
                                             </div>
                                         </TabsContent>
@@ -411,19 +882,54 @@ export default function Caixa() {
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                 <div>
                                                     <Label>Data</Label>
-                                                    <Input type="date" defaultValue={today} />
+                                                    <Input
+                                                        type="date"
+                                                        value={manualForm.date}
+                                                        onChange={(event) =>
+                                                            setManualForm((prev) => ({
+                                                                ...prev,
+                                                                date: event.target.value,
+                                                            }))
+                                                        }
+                                                    />
                                                 </div>
                                                 <div>
                                                     <Label>Nome do Cliente</Label>
-                                                    <Input placeholder="Nome completo" />
+                                                    <Input
+                                                        placeholder="Nome completo"
+                                                        value={manualForm.customerName}
+                                                        onChange={(event) =>
+                                                            setManualForm((prev) => ({
+                                                                ...prev,
+                                                                customerName: event.target.value,
+                                                            }))
+                                                        }
+                                                    />
                                                 </div>
                                                 <div>
                                                     <Label>WhatsApp</Label>
-                                                    <Input placeholder="(00) 00000-0000" />
+                                                    <Input
+                                                        placeholder="(00) 00000-0000"
+                                                        value={manualForm.whatsapp}
+                                                        onChange={(event) =>
+                                                            setManualForm((prev) => ({
+                                                                ...prev,
+                                                                whatsapp: event.target.value,
+                                                            }))
+                                                        }
+                                                    />
                                                 </div>
                                                 <div>
                                                     <Label>Entrega/Retirada</Label>
-                                                    <Select>
+                                                    <Select
+                                                        value={manualForm.fulfillmentType}
+                                                        onValueChange={(value) =>
+                                                            setManualForm((prev) => ({
+                                                                ...prev,
+                                                                fulfillmentType: value ?? "",
+                                                            }))
+                                                        }
+                                                    >
                                                         <SelectTrigger>
                                                             <SelectValue placeholder="Selecione" />
                                                         </SelectTrigger>
@@ -435,14 +941,35 @@ export default function Caixa() {
                                                 </div>
                                                 <div>
                                                     <Label>Taxa de Entrega</Label>
-                                                    <Input type="number" step="0.01" placeholder="R$ 0,00" />
+                                                    <Input
+                                                        type="number"
+                                                        step="0.01"
+                                                        placeholder="R$ 0,00"
+                                                        value={manualForm.deliveryFee}
+                                                        onChange={(event) =>
+                                                            setManualForm((prev) => ({
+                                                                ...prev,
+                                                                deliveryFee: event.target.value,
+                                                            }))
+                                                        }
+                                                    />
                                                 </div>
                                                 <div>
                                                     <Label>Forma de Pagamento</Label>
-                                                    <Select>
+                                                    <Select
+                                                        value={manualForm.paymentMethod}
+                                                        onValueChange={(value) =>
+                                                            setManualForm((prev) => ({
+                                                                ...prev,
+                                                                paymentMethod: value ?? "",
+                                                            }))
+                                                        }
+                                                    >
                                                         <SelectTrigger>
                                                             <SelectValue placeholder="Selecione">
-                                                                {(value) => paymentLabels[String(value)] ?? "Selecione"}
+                                                                {(value: string) =>
+                                                                    paymentLabels[String(value)] ?? "Selecione"
+                                                                }
                                                             </SelectValue>
                                                         </SelectTrigger>
                                                         <SelectContent>
@@ -456,7 +983,43 @@ export default function Caixa() {
                                                 </div>
                                                 <div>
                                                     <Label>Valor Pago</Label>
-                                                    <Input type="number" step="0.01" placeholder="R$ 0,00" />
+                                                    <Input
+                                                        type="number"
+                                                        step="0.01"
+                                                        placeholder="R$ 0,00"
+                                                        value={manualForm.amountPaid}
+                                                        onChange={(event) =>
+                                                            setManualForm((prev) => ({
+                                                                ...prev,
+                                                                amountPaid: event.target.value,
+                                                            }))
+                                                        }
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <Label>Status</Label>
+                                                    <Select
+                                                        value={manualForm.status}
+                                                        onValueChange={(value) =>
+                                                            setManualForm((prev) => ({
+                                                                ...prev,
+                                                                status: value ?? "pago",
+                                                            }))
+                                                        }
+                                                    >
+                                                        <SelectTrigger>
+                                                            <SelectValue placeholder="Selecione">
+                                                                {(value: string) =>
+                                                                    statusLabels[String(value)] ?? "Selecione"
+                                                                }
+                                                            </SelectValue>
+                                                        </SelectTrigger>
+                                                        <SelectContent>
+                                                            <SelectItem value="pendente">Pendente</SelectItem>
+                                                            <SelectItem value="pago">Pago</SelectItem>
+                                                            <SelectItem value="cancelado">Cancelado</SelectItem>
+                                                        </SelectContent>
+                                                    </Select>
                                                 </div>
                                                 <div className="md:col-span-2">
                                                     <Label>Itens do Pedido</Label>
@@ -466,13 +1029,28 @@ export default function Caixa() {
                                                 </div>
                                                 <div className="md:col-span-2">
                                                     <Label>Observacao</Label>
-                                                    <Textarea placeholder="Observacao adicional" rows={2} />
+                                                    <Textarea
+                                                        placeholder="Observacao adicional"
+                                                        rows={2}
+                                                        value={manualForm.notes}
+                                                        onChange={(event) =>
+                                                            setManualForm((prev) => ({
+                                                                ...prev,
+                                                                notes: event.target.value,
+                                                            }))
+                                                        }
+                                                    />
                                                 </div>
                                             </div>
                                             <div className="flex justify-end">
-                                                <Button size="lg" className="gap-2" onClick={() => setIsEntryModalOpen(false)}>
+                                                <Button
+                                                    size="lg"
+                                                    className="gap-2"
+                                                    onClick={handleSaveManual}
+                                                    disabled={createManualEntry.isPending}
+                                                >
                                                     <ArrowUpRight className="h-4 w-4" />
-                                                    Salvar
+                                                    {createManualEntry.isPending ? "Salvando..." : "Salvar"}
                                                 </Button>
                                             </div>
                                         </TabsContent>
@@ -485,22 +1063,64 @@ export default function Caixa() {
                                 <TableHeader>
                                     <TableRow>
                                         <TableHead>Data</TableHead>
-                                        <TableHead>Total</TableHead>
-                                        <TableHead>Observação</TableHead>
+                                        <TableHead>Cliente</TableHead>
+                                        <TableHead>Valor Pago</TableHead>
+                                        <TableHead>Forma de Pagamento</TableHead>
+                                        <TableHead>Entrega/Retirada</TableHead>
+                                        <TableHead className="text-right">Ações</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
-                                    {mockEntries.map((item, index) => (
-                                        <TableRow key={index}>
-                                            <TableCell>{format(new Date(item.data), "dd/MM/yyyy")}</TableCell>
-                                            <TableCell className="font-bold text-green-500">
-                                                R$ {item.total.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
-                                            </TableCell>
-                                            <TableCell className="text-muted-foreground">
-                                                {item.observacao || "-"}
+                                    {isEntriesLoading ? (
+                                        <TableRow>
+                                            <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                                                Carregando entradas...
                                             </TableCell>
                                         </TableRow>
-                                    ))}
+                                    ) : combinedEntries.length === 0 ? (
+                                        <TableRow>
+                                            <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                                                sem dados cadastrados
+                                            </TableCell>
+                                        </TableRow>
+                                    ) : (
+                                        combinedEntries.map((entry) => (
+                                            <TableRow key={`${entry.source}-${entry.id}`}>
+                                                <TableCell>{format(new Date(entry.date), "dd/MM/yyyy")}</TableCell>
+                                                <TableCell>{entry.customerName}</TableCell>
+                                                <TableCell className="font-bold text-green-500">
+                                                    R${" "}
+                                                    {entry.amountPaid.toLocaleString("pt-BR", {
+                                                        minimumFractionDigits: 2,
+                                                    })}
+                                                </TableCell>
+                                                <TableCell>
+                                                    {paymentLabels[entry.paymentMethod] ?? entry.paymentMethod}
+                                                </TableCell>
+                                                <TableCell>
+                                                    {fulfillmentLabels[entry.fulfillmentType] ?? entry.fulfillmentType}
+                                                </TableCell>
+                                                <TableCell className="text-right">
+                                                    <div className="flex items-center justify-end gap-2">
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="icon"
+                                                            onClick={() => toast.info("Edicao em breve")}
+                                                        >
+                                                            <Edit className="h-4 w-4" />
+                                                        </Button>
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="icon"
+                                                            onClick={() => toast.info("Exclusao em breve")}
+                                                        >
+                                                            <Trash2 className="h-4 w-4 text-destructive" />
+                                                        </Button>
+                                                    </div>
+                                                </TableCell>
+                                            </TableRow>
+                                        ))
+                                    )}
                                 </TableBody>
                             </Table>
                         </div>
@@ -537,7 +1157,9 @@ export default function Caixa() {
                                             <Select>
                                                 <SelectTrigger>
                                                     <SelectValue placeholder="Selecione">
-                                                        {(value) => exitCategoryLabels[String(value)] ?? "Selecione"}
+                                                        {(value: string) =>
+                                                            exitCategoryLabels[String(value)] ?? "Selecione"
+                                                        }
                                                     </SelectValue>
                                                 </SelectTrigger>
                                                 <SelectContent>
@@ -563,7 +1185,9 @@ export default function Caixa() {
                                             <Select>
                                                 <SelectTrigger>
                                                     <SelectValue placeholder="Selecione">
-                                                        {(value) => paymentLabels[String(value)] ?? "Selecione"}
+                                                        {(value: string) =>
+                                                            paymentLabels[String(value)] ?? "Selecione"
+                                                        }
                                                     </SelectValue>
                                                 </SelectTrigger>
                                                 <SelectContent>

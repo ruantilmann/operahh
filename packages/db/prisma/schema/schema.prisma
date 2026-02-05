@@ -14,6 +14,25 @@ enum CategoryType {
   STOCK
 }
 
+enum PaymentMethod {
+  DINHEIRO
+  CARTAO
+  DEBITO
+  PIX
+  BOLETO
+}
+
+enum EntryStatus {
+  PENDENTE
+  PAGO
+  CANCELADO
+}
+
+enum FulfillmentType {
+  ENTREGA
+  RETIRADA
+}
+
 model Category {
   id        String        @id @default(cuid())
   name      String
@@ -32,8 +51,113 @@ model Product {
   price      Decimal  @db.Decimal(10, 2)
   categoryId String
   category   Category @relation(fields: [categoryId], references: [id])
+  instadeliveryEntryItems InstaDeliveryEntryItem[]
+  ifoodEntryItems         IfoodEntryItem[]
+  manualEntryItems        ManualEntryItem[]
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
   @@index([categoryId])
+}
+
+model InstaDeliveryEntry {
+  id              String                 @id @default(cuid())
+  date            DateTime
+  customerName    String
+  whatsapp        String
+  fulfillmentType FulfillmentType
+  deliveryFee     Decimal                @db.Decimal(10, 2)
+  paymentMethod   PaymentMethod
+  amountPaid      Decimal                @db.Decimal(10, 2)
+  status          EntryStatus            @default(PAGO)
+  notes           String?
+  items           InstaDeliveryEntryItem[]
+  createdAt       DateTime               @default(now())
+  updatedAt       DateTime               @updatedAt
+
+  @@map("instadelivery_entries")
+  @@index([date])
+}
+
+model InstaDeliveryEntryItem {
+  id                  String              @id @default(cuid())
+  entryId             String
+  productId           String
+  quantity            Int
+  productNameSnapshot String
+  unitPriceSnapshot   Decimal             @db.Decimal(10, 2)
+  entry               InstaDeliveryEntry  @relation(fields: [entryId], references: [id], onDelete: Cascade)
+  product             Product             @relation(fields: [productId], references: [id])
+
+  @@map("instadelivery_entry_items")
+  @@index([entryId])
+  @@index([productId])
+}
+
+model IfoodEntry {
+  id              String          @id @default(cuid())
+  date            DateTime
+  customerName    String
+  whatsapp        String
+  fulfillmentType FulfillmentType
+  deliveryFee     Decimal         @db.Decimal(10, 2)
+  paymentMethod   PaymentMethod
+  amountPaid      Decimal         @db.Decimal(10, 2)
+  status          EntryStatus     @default(PAGO)
+  notes           String?
+  items           IfoodEntryItem[]
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  @@map("ifood_entries")
+  @@index([date])
+}
+
+model IfoodEntryItem {
+  id                  String     @id @default(cuid())
+  entryId             String
+  productId           String
+  quantity            Int
+  productNameSnapshot String
+  unitPriceSnapshot   Decimal    @db.Decimal(10, 2)
+  entry               IfoodEntry @relation(fields: [entryId], references: [id], onDelete: Cascade)
+  product             Product    @relation(fields: [productId], references: [id])
+
+  @@map("ifood_entry_items")
+  @@index([entryId])
+  @@index([productId])
+}
+
+model ManualEntry {
+  id              String           @id @default(cuid())
+  date            DateTime
+  customerName    String
+  whatsapp        String
+  fulfillmentType FulfillmentType
+  deliveryFee     Decimal          @db.Decimal(10, 2)
+  paymentMethod   PaymentMethod
+  amountPaid      Decimal          @db.Decimal(10, 2)
+  status          EntryStatus      @default(PAGO)
+  notes           String?
+  items           ManualEntryItem[]
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  @@map("manual_entries")
+  @@index([date])
+}
+
+model ManualEntryItem {
+  id                  String      @id @default(cuid())
+  entryId             String
+  productId           String
+  quantity            Int
+  productNameSnapshot String
+  unitPriceSnapshot   Decimal     @db.Decimal(10, 2)
+  entry               ManualEntry @relation(fields: [entryId], references: [id], onDelete: Cascade)
+  product             Product     @relation(fields: [productId], references: [id])
+
+  @@map("manual_entry_items")
+  @@index([entryId])
+  @@index([productId])
 }
