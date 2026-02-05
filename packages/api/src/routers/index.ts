@@ -9,6 +9,7 @@ import { productsRouter } from "./products";
 import { instadeliveryEntriesRouter } from "./instadelivery-entries";
 import { ifoodEntriesRouter } from "./ifood-entries";
 import { manualEntriesRouter } from "./manual-entries";
+import { exitsRouter } from "./exits";
 
 export const appRouter = {
   healthCheck: publicProcedure
@@ -40,6 +41,9 @@ export const appRouter = {
   instadeliveryEntries: instadeliveryEntriesRouter,
   ifoodEntries: ifoodEntriesRouter,
   manualEntries: manualEntriesRouter,
+
+  // Módulo de saídas
+  exits: exitsRouter,
 };
 export type AppRouter = typeof appRouter;
 export type AppRouterClient = RouterClient<typeof appRouter>;

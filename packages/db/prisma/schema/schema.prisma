@@ -22,6 +22,15 @@ enum PaymentMethod {
   BOLETO
 }
 
+enum ExitCategory {
+  MATERIA
+  ENERGIA
+  AGUA
+  GAS
+  ALUGUEL
+  OUTROS
+}
+
 enum EntryStatus {
   PENDENTE
   PAGO
@@ -160,4 +169,20 @@ model ManualEntryItem {
   @@map("manual_entry_items")
   @@index([entryId])
   @@index([productId])
+}
+
+model CashExit {
+  id            String        @id @default(cuid())
+  date          DateTime
+  category      ExitCategory
+  description   String
+  amount        Decimal       @db.Decimal(10, 2)
+  paymentMethod PaymentMethod
+  responsible   String
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  @@map("cash_exits")
+  @@index([date])
+  @@index([category])
 }

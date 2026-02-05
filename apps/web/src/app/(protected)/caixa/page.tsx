@@ -35,25 +35,6 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { client, orpc } from "@/utils/orpc";
 import { toast } from "sonner";
 
-const mockExits = [
-    {
-        data: "2025-11-18",
-        categoria: "Matéria-prima",
-        descricao: "Compra de chocolate",
-        valor: 450.0,
-        formaPagamento: "Cartão",
-        responsavel: "Maria Silva",
-    },
-    {
-        data: "2025-11-18",
-        categoria: "Energia",
-        descricao: "Conta de luz",
-        valor: 280.0,
-        formaPagamento: "Débito",
-        responsavel: "João Santos",
-    },
-];
-
 const paymentLabels: Record<string, string> = {
     dinheiro: "Dinheiro",
     cartao: "Cartão",
@@ -86,6 +67,8 @@ const exitCategoryLabels: Record<string, string> = {
 export default function Caixa() {
     const [isEntryModalOpen, setIsEntryModalOpen] = useState(false);
     const [isExitModalOpen, setIsExitModalOpen] = useState(false);
+    const [isExitEditModalOpen, setIsExitEditModalOpen] = useState(false);
+    const [editingExitId, setEditingExitId] = useState<string | null>(null);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [editingSource, setEditingSource] = useState<"instadelivery" | "ifood" | "manual" | null>(null);
     const [editingId, setEditingId] = useState<string | null>(null);
@@ -127,6 +110,22 @@ export default function Caixa() {
         status: "pago",
         notes: "",
     });
+    const [exitForm, setExitForm] = useState({
+        date: today,
+        category: "",
+        description: "",
+        amount: "",
+        paymentMethod: "",
+        responsible: "",
+    });
+    const [exitEditForm, setExitEditForm] = useState({
+        date: today,
+        category: "",
+        description: "",
+        amount: "",
+        paymentMethod: "",
+        responsible: "",
+    });
     const [editForm, setEditForm] = useState({
         date: today,
         customerName: "",
@@ -151,6 +150,9 @@ export default function Caixa() {
     const { data: manualEntries, isLoading: isLoadingManualEntries } = useQuery(
         orpc.manualEntries.list.queryOptions({})
     );
+    const { data: exits, isLoading: isLoadingExits } = useQuery(
+        orpc.exits.list.queryOptions({})
+    );
     const productsList = products ?? [];
     const hasProducts = productsList.length > 0;
     const combinedEntries = [
@@ -170,7 +172,8 @@ export default function Caixa() {
     const isEntriesLoading =
         isLoadingInstadeliveryEntries || isLoadingIfoodEntries || isLoadingManualEntries;
     const totalEntries = combinedEntries.reduce((sum, entry) => sum + entry.amountPaid, 0);
-    const totalExits = mockExits.reduce((sum, exit) => sum + exit.valor, 0);
+    const exitsList = exits ?? [];
+    const totalExits = exitsList.reduce((sum, exit) => sum + exit.amount, 0);
     const balance = totalEntries - totalExits;
 
     const createInstadeliveryEntry = useMutation({
@@ -362,6 +365,57 @@ export default function Caixa() {
         },
     });
 
+    const createExit = useMutation({
+        mutationFn: async (payload: {
+            date: string;
+            category: "materia" | "energia" | "agua" | "gas" | "aluguel" | "outros";
+            description: string;
+            amount: number;
+            paymentMethod: "dinheiro" | "cartao" | "debito" | "pix" | "boleto";
+            responsible: string;
+        }) => client.exits.create(payload),
+        onSuccess: () => {
+            toast.success("Saida registrada!");
+            queryClient.invalidateQueries({
+                queryKey: orpc.exits.list.queryKey(),
+            });
+            setIsExitModalOpen(false);
+            setExitForm({
+                date: today,
+                category: "",
+                description: "",
+                amount: "",
+                paymentMethod: "",
+                responsible: "",
+            });
+        },
+        onError: (error) => {
+            toast.error(`Erro ao registrar saida: ${error.message}`);
+        },
+    });
+
+    const updateExit = useMutation({
+        mutationFn: async (payload: {
+            id: string;
+            date: string;
+            category: "materia" | "energia" | "agua" | "gas" | "aluguel" | "outros";
+            description: string;
+            amount: number;
+            paymentMethod: "dinheiro" | "cartao" | "debito" | "pix" | "boleto";
+            responsible: string;
+        }) => client.exits.update(payload),
+        onSuccess: () => {
+            toast.success("Saida atualizada!");
+            queryClient.invalidateQueries({
+                queryKey: orpc.exits.list.queryKey(),
+            });
+            setIsExitEditModalOpen(false);
+        },
+        onError: (error) => {
+            toast.error(`Erro ao atualizar saida: ${error.message}`);
+        },
+    });
+
     const buildItemsPayload = (items: { productId: string; quantity: string }[]) =>
         items
             .map((item) => ({
@@ -457,6 +511,96 @@ export default function Caixa() {
             status: manualForm.status as "pendente" | "pago" | "cancelado",
             notes: manualForm.notes.trim() ? manualForm.notes.trim() : undefined,
             items: buildItemsPayload(manualItems),
+        });
+    };
+
+    const handleSaveExit = () => {
+        if (!exitForm.category || !exitForm.paymentMethod) {
+            toast.error("Selecione categoria e forma de pagamento.");
+            return;
+        }
+
+        if (!exitForm.description.trim() || !exitForm.responsible.trim()) {
+            toast.error("Preencha descricao e responsavel.");
+            return;
+        }
+
+        createExit.mutate({
+            date: exitForm.date,
+            category: exitForm.category as
+                | "materia"
+                | "energia"
+                | "agua"
+                | "gas"
+                | "aluguel"
+                | "outros",
+            description: exitForm.description.trim(),
+            amount: Number(exitForm.amount) || 0,
+            paymentMethod: exitForm.paymentMethod as
+                | "dinheiro"
+                | "cartao"
+                | "debito"
+                | "pix"
+                | "boleto",
+            responsible: exitForm.responsible.trim(),
+        });
+    };
+
+    const openExitEditModal = (exit: {
+        id: string;
+        date: string;
+        category: string;
+        description: string;
+        amount: number;
+        paymentMethod: string;
+        responsible: string;
+    }) => {
+        setEditingExitId(exit.id);
+        setExitEditForm({
+            date: exit.date.slice(0, 10),
+            category: exit.category,
+            description: exit.description,
+            amount: String(exit.amount ?? ""),
+            paymentMethod: exit.paymentMethod,
+            responsible: exit.responsible,
+        });
+        setIsExitEditModalOpen(true);
+    };
+
+    const handleSaveExitEdit = () => {
+        if (!editingExitId) {
+            return;
+        }
+
+        if (!exitEditForm.category || !exitEditForm.paymentMethod) {
+            toast.error("Selecione categoria e forma de pagamento.");
+            return;
+        }
+
+        if (!exitEditForm.description.trim() || !exitEditForm.responsible.trim()) {
+            toast.error("Preencha descricao e responsavel.");
+            return;
+        }
+
+        updateExit.mutate({
+            id: editingExitId,
+            date: exitEditForm.date,
+            category: exitEditForm.category as
+                | "materia"
+                | "energia"
+                | "agua"
+                | "gas"
+                | "aluguel"
+                | "outros",
+            description: exitEditForm.description.trim(),
+            amount: Number(exitEditForm.amount) || 0,
+            paymentMethod: exitEditForm.paymentMethod as
+                | "dinheiro"
+                | "cartao"
+                | "debito"
+                | "pix"
+                | "boleto",
+            responsible: exitEditForm.responsible.trim(),
         });
     };
 
@@ -818,6 +962,139 @@ export default function Caixa() {
                         >
                             <ArrowUpRight className="h-4 w-4" />
                             {isEditSaving ? "Salvando..." : "Salvar"}
+                        </Button>
+                    </div>
+                </DialogContent>
+            </Dialog>
+            <Dialog open={isExitEditModalOpen} onOpenChange={setIsExitEditModalOpen}>
+                <DialogContent className="max-w-md">
+                    <DialogHeader>
+                        <DialogTitle className="flex items-center gap-2">
+                            <Edit className="h-5 w-5" />
+                            Editar Saída
+                        </DialogTitle>
+                    </DialogHeader>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                        <div>
+                            <Label>Data</Label>
+                            <Input
+                                type="date"
+                                value={exitEditForm.date}
+                                onChange={(event) =>
+                                    setExitEditForm((prev) => ({
+                                        ...prev,
+                                        date: event.target.value,
+                                    }))
+                                }
+                            />
+                        </div>
+                        <div>
+                            <Label>Categoria</Label>
+                            <Select
+                                value={exitEditForm.category}
+                                onValueChange={(value) =>
+                                    setExitEditForm((prev) => ({
+                                        ...prev,
+                                        category: value ?? "",
+                                    }))
+                                }
+                            >
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Selecione">
+                                        {(value: string) =>
+                                            exitCategoryLabels[String(value)] ?? "Selecione"
+                                        }
+                                    </SelectValue>
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="materia">Matéria-prima</SelectItem>
+                                    <SelectItem value="energia">Energia</SelectItem>
+                                    <SelectItem value="agua">Água</SelectItem>
+                                    <SelectItem value="gas">Gás</SelectItem>
+                                    <SelectItem value="aluguel">Aluguel</SelectItem>
+                                    <SelectItem value="outros">Outros</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div className="md:col-span-2">
+                            <Label>Descrição</Label>
+                            <Input
+                                placeholder="Descrição da despesa"
+                                value={exitEditForm.description}
+                                onChange={(event) =>
+                                    setExitEditForm((prev) => ({
+                                        ...prev,
+                                        description: event.target.value,
+                                    }))
+                                }
+                            />
+                        </div>
+                        <div>
+                            <Label>Valor</Label>
+                            <Input
+                                type="number"
+                                step="0.01"
+                                placeholder="R$ 0,00"
+                                value={exitEditForm.amount}
+                                onChange={(event) =>
+                                    setExitEditForm((prev) => ({
+                                        ...prev,
+                                        amount: event.target.value,
+                                    }))
+                                }
+                            />
+                        </div>
+                        <div>
+                            <Label>Forma de Pagamento</Label>
+                            <Select
+                                value={exitEditForm.paymentMethod}
+                                onValueChange={(value) =>
+                                    setExitEditForm((prev) => ({
+                                        ...prev,
+                                        paymentMethod: value ?? "",
+                                    }))
+                                }
+                            >
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Selecione">
+                                        {(value: string) =>
+                                            paymentLabels[String(value)] ?? "Selecione"
+                                        }
+                                    </SelectValue>
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="dinheiro">Dinheiro</SelectItem>
+                                    <SelectItem value="cartao">Cartão</SelectItem>
+                                    <SelectItem value="debito">Débito</SelectItem>
+                                    <SelectItem value="pix">PIX</SelectItem>
+                                    <SelectItem value="boleto">Boleto</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div className="md:col-span-2">
+                            <Label>Responsável</Label>
+                            <Input
+                                placeholder="Nome do responsável"
+                                value={exitEditForm.responsible}
+                                onChange={(event) =>
+                                    setExitEditForm((prev) => ({
+                                        ...prev,
+                                        responsible: event.target.value,
+                                    }))
+                                }
+                            />
+                        </div>
+                    </div>
+                    <div className="flex justify-end">
+                        <Button
+                            size="lg"
+                            variant="destructive"
+                            className="gap-2"
+                            onClick={handleSaveExitEdit}
+                            disabled={updateExit.isPending}
+                        >
+                            <ArrowDownRight className="h-4 w-4" />
+                            {updateExit.isPending ? "Salvando..." : "Salvar"}
                         </Button>
                     </div>
                 </DialogContent>
@@ -1528,11 +1805,28 @@ export default function Caixa() {
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                                         <div>
                                             <Label>Data</Label>
-                                            <Input type="date" />
+                                            <Input
+                                                type="date"
+                                                value={exitForm.date}
+                                                onChange={(event) =>
+                                                    setExitForm((prev) => ({
+                                                        ...prev,
+                                                        date: event.target.value,
+                                                    }))
+                                                }
+                                            />
                                         </div>
                                         <div>
                                             <Label>Categoria</Label>
-                                            <Select>
+                                            <Select
+                                                value={exitForm.category}
+                                                onValueChange={(value) =>
+                                                    setExitForm((prev) => ({
+                                                        ...prev,
+                                                        category: value ?? "",
+                                                    }))
+                                                }
+                                            >
                                                 <SelectTrigger>
                                                     <SelectValue placeholder="Selecione">
                                                         {(value: string) =>
@@ -1552,15 +1846,43 @@ export default function Caixa() {
                                         </div>
                                         <div className="md:col-span-2">
                                             <Label>Descrição</Label>
-                                            <Input placeholder="Descrição da despesa" />
+                                            <Input
+                                                placeholder="Descrição da despesa"
+                                                value={exitForm.description}
+                                                onChange={(event) =>
+                                                    setExitForm((prev) => ({
+                                                        ...prev,
+                                                        description: event.target.value,
+                                                    }))
+                                                }
+                                            />
                                         </div>
                                         <div>
                                             <Label>Valor</Label>
-                                            <Input type="number" step="0.01" placeholder="R$ 0,00" />
+                                            <Input
+                                                type="number"
+                                                step="0.01"
+                                                placeholder="R$ 0,00"
+                                                value={exitForm.amount}
+                                                onChange={(event) =>
+                                                    setExitForm((prev) => ({
+                                                        ...prev,
+                                                        amount: event.target.value,
+                                                    }))
+                                                }
+                                            />
                                         </div>
                                         <div>
                                             <Label>Forma de Pagamento</Label>
-                                            <Select>
+                                            <Select
+                                                value={exitForm.paymentMethod}
+                                                onValueChange={(value) =>
+                                                    setExitForm((prev) => ({
+                                                        ...prev,
+                                                        paymentMethod: value ?? "",
+                                                    }))
+                                                }
+                                            >
                                                 <SelectTrigger>
                                                     <SelectValue placeholder="Selecione">
                                                         {(value: string) =>
@@ -1579,13 +1901,28 @@ export default function Caixa() {
                                         </div>
                                         <div className="md:col-span-2">
                                             <Label>Responsável</Label>
-                                            <Input placeholder="Nome do responsável" />
+                                            <Input
+                                                placeholder="Nome do responsável"
+                                                value={exitForm.responsible}
+                                                onChange={(event) =>
+                                                    setExitForm((prev) => ({
+                                                        ...prev,
+                                                        responsible: event.target.value,
+                                                    }))
+                                                }
+                                            />
                                         </div>
                                     </div>
                                     <div className="flex justify-end">
-                                        <Button size="lg" variant="destructive" className="gap-2" onClick={() => setIsExitModalOpen(false)}>
+                                        <Button
+                                            size="lg"
+                                            variant="destructive"
+                                            className="gap-2"
+                                            onClick={handleSaveExit}
+                                            disabled={createExit.isPending}
+                                        >
                                             <ArrowDownRight className="h-4 w-4" />
-                                            Registrar Saída
+                                            {createExit.isPending ? "Salvando..." : "Registrar Saída"}
                                         </Button>
                                     </div>
                                 </DialogContent>
@@ -1601,23 +1938,54 @@ export default function Caixa() {
                                         <TableHead>Valor</TableHead>
                                         <TableHead>Pagamento</TableHead>
                                         <TableHead>Responsável</TableHead>
+                                        <TableHead className="text-right">Ações</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
-                                    {mockExits.map((item, index) => (
-                                        <TableRow key={index}>
-                                            <TableCell>{format(new Date(item.data), "dd/MM/yyyy")}</TableCell>
-                                            <TableCell>{item.categoria}</TableCell>
-                                            <TableCell className="text-muted-foreground">
-                                                {item.descricao}
+                                    {isLoadingExits ? (
+                                        <TableRow>
+                                            <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                                                Carregando saídas...
                                             </TableCell>
-                                            <TableCell className="font-bold text-destructive">
-                                                R$ {item.valor.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
-                                            </TableCell>
-                                            <TableCell>{item.formaPagamento}</TableCell>
-                                            <TableCell>{item.responsavel}</TableCell>
                                         </TableRow>
-                                    ))}
+                                    ) : exitsList.length === 0 ? (
+                                        <TableRow>
+                                            <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                                                sem dados cadastrados
+                                            </TableCell>
+                                        </TableRow>
+                                    ) : (
+                                        exitsList.map((item) => (
+                                            <TableRow key={item.id}>
+                                                <TableCell>{format(new Date(item.date), "dd/MM/yyyy")}</TableCell>
+                                                <TableCell>
+                                                    {exitCategoryLabels[item.category] ?? item.category}
+                                                </TableCell>
+                                                <TableCell className="text-muted-foreground">
+                                                    {item.description}
+                                                </TableCell>
+                                                <TableCell className="font-bold text-destructive">
+                                                    R${" "}
+                                                    {item.amount.toLocaleString("pt-BR", {
+                                                        minimumFractionDigits: 2,
+                                                    })}
+                                                </TableCell>
+                                                <TableCell>
+                                                    {paymentLabels[item.paymentMethod] ?? item.paymentMethod}
+                                                </TableCell>
+                                                <TableCell>{item.responsible}</TableCell>
+                                                <TableCell className="text-right">
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        onClick={() => openExitEditModal(item)}
+                                                    >
+                                                        <Edit className="h-4 w-4" />
+                                                    </Button>
+                                                </TableCell>
+                                            </TableRow>
+                                        ))
+                                    )}
                                 </TableBody>
                             </Table>
                         </div>
