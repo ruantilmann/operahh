@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type Dispatch, type SetStateAction } from "react";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -31,6 +31,8 @@ import {
 } from "@/components/ui/table";
 import { Wallet, ArrowUpRight, ArrowDownRight, Plus } from "lucide-react";
 import { format } from "date-fns";
+import { useQuery } from "@tanstack/react-query";
+import { orpc } from "@/utils/orpc";
 
 const mockEntries = [
     { data: "2025-11-18", total: 3245.0, observacao: "Vendas do dia" },
@@ -76,10 +78,112 @@ const exitCategoryLabels: Record<string, string> = {
 export default function Caixa() {
     const [isEntryModalOpen, setIsEntryModalOpen] = useState(false);
     const [isExitModalOpen, setIsExitModalOpen] = useState(false);
+    const [instaItems, setInstaItems] = useState([{ productId: "", quantity: "1" }]);
+    const [ifoodItems, setIfoodItems] = useState([{ productId: "", quantity: "1" }]);
+    const [manualItems, setManualItems] = useState([{ productId: "", quantity: "1" }]);
     const totalEntries = mockEntries.reduce((sum, entry) => sum + entry.total, 0);
     const totalExits = mockExits.reduce((sum, exit) => sum + exit.valor, 0);
     const balance = totalEntries - totalExits;
     const today = new Date().toISOString().slice(0, 10);
+    const { data: products, isLoading: isLoadingProducts } = useQuery(
+        orpc.products.list.queryOptions({})
+    );
+    const productsList = products ?? [];
+    const hasProducts = productsList.length > 0;
+
+    const renderOrderItems = (
+        items: { productId: string; quantity: string }[],
+        setItems: Dispatch<SetStateAction<{ productId: string; quantity: string }[]>>
+    ) => (
+        <div className="space-y-3">
+            {items.map((item, index) => (
+                <div key={`item-${index}`} className="grid grid-cols-1 md:grid-cols-[1fr_140px] gap-3">
+                    <div>
+                        <Label>Produto</Label>
+                        <Select
+                            value={item.productId}
+                            onValueChange={(value) =>
+                                setItems((prev) =>
+                                    prev.map((entry, entryIndex) =>
+                                        entryIndex === index ? { ...entry, productId: value ?? "" } : entry
+                                    )
+                                )
+                            }
+                        >
+                            <SelectTrigger>
+                                <SelectValue
+                                    placeholder={
+                                        isLoadingProducts
+                                            ? "Carregando produtos..."
+                                            : "Selecione um produto"
+                                    }
+                                >
+                                    {(value) => {
+                                        if (!value) {
+                                            return isLoadingProducts
+                                                ? "Carregando produtos..."
+                                                : "Selecione um produto";
+                                        }
+
+                                        const matchedProduct = productsList.find(
+                                            (product) => product.id === value
+                                        );
+
+                                        return matchedProduct?.name ?? String(value);
+                                    }}
+                                </SelectValue>
+                            </SelectTrigger>
+                            <SelectContent>
+                                {isLoadingProducts ? (
+                                    <SelectItem value="__loading" disabled>
+                                        Carregando produtos...
+                                    </SelectItem>
+                                ) : hasProducts ? (
+                                    productsList.map((product) => (
+                                        <SelectItem key={product.id} value={product.id}>
+                                            {product.name}
+                                        </SelectItem>
+                                    ))
+                                ) : (
+                                    <SelectItem value="__empty" disabled>
+                                        sem dados cadastrados
+                                    </SelectItem>
+                                )}
+                            </SelectContent>
+                        </Select>
+                    </div>
+                    <div>
+                        <Label>Quantidade</Label>
+                        <Input
+                            type="number"
+                            min="1"
+                            placeholder="0"
+                            value={item.quantity}
+                            onChange={(event) =>
+                                setItems((prev) =>
+                                    prev.map((entry, entryIndex) =>
+                                        entryIndex === index
+                                            ? { ...entry, quantity: event.target.value }
+                                            : entry
+                                    )
+                                )
+                            }
+                        />
+                    </div>
+                </div>
+            ))}
+            <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="gap-2 w-fit"
+                onClick={() => setItems((prev) => [...prev, { productId: "", quantity: "1" }])}
+            >
+                <Plus className="h-4 w-4" />
+                Adicionar produto
+            </Button>
+        </div>
+    );
 
     return (
         <div className="space-y-6">
@@ -216,7 +320,9 @@ export default function Caixa() {
                                                 </div>
                                                 <div className="md:col-span-2">
                                                     <Label>Itens do Pedido</Label>
-                                                    <Textarea placeholder="Ex: 2x Brigadeiro (R$ 5,00), 1x Coxinha (R$ 7,00)" rows={3} />
+                                                    <div className="mt-2">
+                                                        {renderOrderItems(instaItems, setInstaItems)}
+                                                    </div>
                                                 </div>
                                                 <div className="md:col-span-2">
                                                     <Label>Observacao</Label>
@@ -284,7 +390,9 @@ export default function Caixa() {
                                                 </div>
                                                 <div className="md:col-span-2">
                                                     <Label>Itens do Pedido</Label>
-                                                    <Textarea placeholder="Ex: 2x Brigadeiro (R$ 5,00), 1x Coxinha (R$ 7,00)" rows={3} />
+                                                    <div className="mt-2">
+                                                        {renderOrderItems(ifoodItems, setIfoodItems)}
+                                                    </div>
                                                 </div>
                                                 <div className="md:col-span-2">
                                                     <Label>Observacao</Label>
@@ -352,7 +460,9 @@ export default function Caixa() {
                                                 </div>
                                                 <div className="md:col-span-2">
                                                     <Label>Itens do Pedido</Label>
-                                                    <Textarea placeholder="Ex: 2x Brigadeiro (R$ 5,00), 1x Coxinha (R$ 7,00)" rows={3} />
+                                                    <div className="mt-2">
+                                                        {renderOrderItems(manualItems, setManualItems)}
+                                                    </div>
                                                 </div>
                                                 <div className="md:col-span-2">
                                                     <Label>Observacao</Label>
