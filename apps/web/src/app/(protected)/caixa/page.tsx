@@ -232,14 +232,138 @@ export default function Caixa() {
                                         </TabsContent>
 
                                         <TabsContent value="ifood" className="space-y-4 mt-4">
-                                            <div className="rounded-lg border border-dashed border-muted-foreground/40 p-4 text-sm text-muted-foreground">
-                                                Conteudo generico para entrada via Ifood. Placeholder temporario para definirmos os campos.
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                <div>
+                                                    <Label>Data</Label>
+                                                    <Input type="date" defaultValue={today} />
+                                                </div>
+                                                <div>
+                                                    <Label>Nome do Cliente</Label>
+                                                    <Input placeholder="Nome completo" />
+                                                </div>
+                                                <div>
+                                                    <Label>WhatsApp</Label>
+                                                    <Input placeholder="(00) 00000-0000" />
+                                                </div>
+                                                <div>
+                                                    <Label>Entrega/Retirada</Label>
+                                                    <Select>
+                                                        <SelectTrigger>
+                                                            <SelectValue placeholder="Selecione" />
+                                                        </SelectTrigger>
+                                                        <SelectContent>
+                                                            <SelectItem value="entrega">Entrega</SelectItem>
+                                                            <SelectItem value="retirada">Retirada</SelectItem>
+                                                        </SelectContent>
+                                                    </Select>
+                                                </div>
+                                                <div>
+                                                    <Label>Taxa de Entrega</Label>
+                                                    <Input type="number" step="0.01" placeholder="R$ 0,00" />
+                                                </div>
+                                                <div>
+                                                    <Label>Forma de Pagamento</Label>
+                                                    <Select>
+                                                        <SelectTrigger>
+                                                            <SelectValue placeholder="Selecione">
+                                                                {(value) => paymentLabels[String(value)] ?? "Selecione"}
+                                                            </SelectValue>
+                                                        </SelectTrigger>
+                                                        <SelectContent>
+                                                            <SelectItem value="dinheiro">Dinheiro</SelectItem>
+                                                            <SelectItem value="cartao">Cartão</SelectItem>
+                                                            <SelectItem value="debito">Débito</SelectItem>
+                                                            <SelectItem value="pix">PIX</SelectItem>
+                                                            <SelectItem value="boleto">Boleto</SelectItem>
+                                                        </SelectContent>
+                                                    </Select>
+                                                </div>
+                                                <div>
+                                                    <Label>Valor Pago</Label>
+                                                    <Input type="number" step="0.01" placeholder="R$ 0,00" />
+                                                </div>
+                                                <div className="md:col-span-2">
+                                                    <Label>Itens do Pedido</Label>
+                                                    <Textarea placeholder="Ex: 2x Brigadeiro (R$ 5,00), 1x Coxinha (R$ 7,00)" rows={3} />
+                                                </div>
+                                                <div className="md:col-span-2">
+                                                    <Label>Observacao</Label>
+                                                    <Textarea placeholder="Observacao adicional" rows={2} />
+                                                </div>
+                                            </div>
+                                            <div className="flex justify-end">
+                                                <Button size="lg" className="gap-2" onClick={() => setIsEntryModalOpen(false)}>
+                                                    <ArrowUpRight className="h-4 w-4" />
+                                                    Salvar
+                                                </Button>
                                             </div>
                                         </TabsContent>
 
                                         <TabsContent value="manual" className="space-y-4 mt-4">
-                                            <div className="rounded-lg border border-dashed border-muted-foreground/40 p-4 text-sm text-muted-foreground">
-                                                Conteudo generico para entrada manual. Podemos adicionar campos e validacoes depois.
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                <div>
+                                                    <Label>Data</Label>
+                                                    <Input type="date" defaultValue={today} />
+                                                </div>
+                                                <div>
+                                                    <Label>Nome do Cliente</Label>
+                                                    <Input placeholder="Nome completo" />
+                                                </div>
+                                                <div>
+                                                    <Label>WhatsApp</Label>
+                                                    <Input placeholder="(00) 00000-0000" />
+                                                </div>
+                                                <div>
+                                                    <Label>Entrega/Retirada</Label>
+                                                    <Select>
+                                                        <SelectTrigger>
+                                                            <SelectValue placeholder="Selecione" />
+                                                        </SelectTrigger>
+                                                        <SelectContent>
+                                                            <SelectItem value="entrega">Entrega</SelectItem>
+                                                            <SelectItem value="retirada">Retirada</SelectItem>
+                                                        </SelectContent>
+                                                    </Select>
+                                                </div>
+                                                <div>
+                                                    <Label>Taxa de Entrega</Label>
+                                                    <Input type="number" step="0.01" placeholder="R$ 0,00" />
+                                                </div>
+                                                <div>
+                                                    <Label>Forma de Pagamento</Label>
+                                                    <Select>
+                                                        <SelectTrigger>
+                                                            <SelectValue placeholder="Selecione">
+                                                                {(value) => paymentLabels[String(value)] ?? "Selecione"}
+                                                            </SelectValue>
+                                                        </SelectTrigger>
+                                                        <SelectContent>
+                                                            <SelectItem value="dinheiro">Dinheiro</SelectItem>
+                                                            <SelectItem value="cartao">Cartão</SelectItem>
+                                                            <SelectItem value="debito">Débito</SelectItem>
+                                                            <SelectItem value="pix">PIX</SelectItem>
+                                                            <SelectItem value="boleto">Boleto</SelectItem>
+                                                        </SelectContent>
+                                                    </Select>
+                                                </div>
+                                                <div>
+                                                    <Label>Valor Pago</Label>
+                                                    <Input type="number" step="0.01" placeholder="R$ 0,00" />
+                                                </div>
+                                                <div className="md:col-span-2">
+                                                    <Label>Itens do Pedido</Label>
+                                                    <Textarea placeholder="Ex: 2x Brigadeiro (R$ 5,00), 1x Coxinha (R$ 7,00)" rows={3} />
+                                                </div>
+                                                <div className="md:col-span-2">
+                                                    <Label>Observacao</Label>
+                                                    <Textarea placeholder="Observacao adicional" rows={2} />
+                                                </div>
+                                            </div>
+                                            <div className="flex justify-end">
+                                                <Button size="lg" className="gap-2" onClick={() => setIsEntryModalOpen(false)}>
+                                                    <ArrowUpRight className="h-4 w-4" />
+                                                    Salvar
+                                                </Button>
                                             </div>
                                         </TabsContent>
                                     </Tabs>
