@@ -31,7 +31,7 @@ import {
 } from "@/components/ui/table";
 import { Wallet, ArrowUpRight, ArrowDownRight, Plus, Edit, Trash2 } from "lucide-react";
 import { format } from "date-fns";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { client, orpc } from "@/utils/orpc";
 import { toast } from "sonner";
 
@@ -86,6 +86,10 @@ const exitCategoryLabels: Record<string, string> = {
 export default function Caixa() {
     const [isEntryModalOpen, setIsEntryModalOpen] = useState(false);
     const [isExitModalOpen, setIsExitModalOpen] = useState(false);
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [editingSource, setEditingSource] = useState<"instadelivery" | "ifood" | "manual" | null>(null);
+    const [editingId, setEditingId] = useState<string | null>(null);
+    const queryClient = useQueryClient();
     const today = new Date().toISOString().slice(0, 10);
     const [instaItems, setInstaItems] = useState([{ productId: "", quantity: "1" }]);
     const [ifoodItems, setIfoodItems] = useState([{ productId: "", quantity: "1" }]);
@@ -123,6 +127,18 @@ export default function Caixa() {
         status: "pago",
         notes: "",
     });
+    const [editForm, setEditForm] = useState({
+        date: today,
+        customerName: "",
+        whatsapp: "",
+        fulfillmentType: "",
+        deliveryFee: "",
+        paymentMethod: "",
+        amountPaid: "",
+        status: "pago",
+        notes: "",
+    });
+    const [editItems, setEditItems] = useState([{ productId: "", quantity: "1" }]);
     const { data: products, isLoading: isLoadingProducts } = useQuery(
         orpc.products.list.queryOptions({})
     );
@@ -138,9 +154,18 @@ export default function Caixa() {
     const productsList = products ?? [];
     const hasProducts = productsList.length > 0;
     const combinedEntries = [
-        ...(instadeliveryEntries ?? []).map((entry) => ({ ...entry, source: "instadelivery" })),
-        ...(ifoodEntries ?? []).map((entry) => ({ ...entry, source: "ifood" })),
-        ...(manualEntries ?? []).map((entry) => ({ ...entry, source: "manual" })),
+        ...(instadeliveryEntries ?? []).map((entry) => ({
+            ...entry,
+            source: "instadelivery" as const,
+        })),
+        ...(ifoodEntries ?? []).map((entry) => ({
+            ...entry,
+            source: "ifood" as const,
+        })),
+        ...(manualEntries ?? []).map((entry) => ({
+            ...entry,
+            source: "manual" as const,
+        })),
     ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
     const isEntriesLoading =
         isLoadingInstadeliveryEntries || isLoadingIfoodEntries || isLoadingManualEntries;
@@ -163,6 +188,9 @@ export default function Caixa() {
         }) => client.instadeliveryEntries.create(payload),
         onSuccess: () => {
             toast.success("Entrada InstaDelivery salva!");
+            queryClient.invalidateQueries({
+                queryKey: orpc.instadeliveryEntries.list.queryKey(),
+            });
             setIsEntryModalOpen(false);
             setInstaForm({
                 date: today,
@@ -197,6 +225,9 @@ export default function Caixa() {
         }) => client.ifoodEntries.create(payload),
         onSuccess: () => {
             toast.success("Entrada Ifood salva!");
+            queryClient.invalidateQueries({
+                queryKey: orpc.ifoodEntries.list.queryKey(),
+            });
             setIsEntryModalOpen(false);
             setIfoodForm({
                 date: today,
@@ -231,6 +262,9 @@ export default function Caixa() {
         }) => client.manualEntries.create(payload),
         onSuccess: () => {
             toast.success("Entrada Manual salva!");
+            queryClient.invalidateQueries({
+                queryKey: orpc.manualEntries.list.queryKey(),
+            });
             setIsEntryModalOpen(false);
             setManualForm({
                 date: today,
@@ -247,6 +281,84 @@ export default function Caixa() {
         },
         onError: (error) => {
             toast.error(`Erro ao salvar entrada Manual: ${error.message}`);
+        },
+    });
+
+    const updateInstadeliveryEntry = useMutation({
+        mutationFn: async (payload: {
+            id: string;
+            date: string;
+            customerName: string;
+            whatsapp: string;
+            fulfillmentType: "entrega" | "retirada";
+            deliveryFee: number;
+            paymentMethod: "dinheiro" | "cartao" | "debito" | "pix" | "boleto";
+            amountPaid: number;
+            status: "pendente" | "pago" | "cancelado";
+            notes?: string;
+            items: { productId: string; quantity: number }[];
+        }) => client.instadeliveryEntries.update(payload),
+        onSuccess: () => {
+            toast.success("Entrada InstaDelivery atualizada!");
+            queryClient.invalidateQueries({
+                queryKey: orpc.instadeliveryEntries.list.queryKey(),
+            });
+            setIsEditModalOpen(false);
+        },
+        onError: (error) => {
+            toast.error(`Erro ao atualizar entrada InstaDelivery: ${error.message}`);
+        },
+    });
+
+    const updateIfoodEntry = useMutation({
+        mutationFn: async (payload: {
+            id: string;
+            date: string;
+            customerName: string;
+            whatsapp: string;
+            fulfillmentType: "entrega" | "retirada";
+            deliveryFee: number;
+            paymentMethod: "dinheiro" | "cartao" | "debito" | "pix" | "boleto";
+            amountPaid: number;
+            status: "pendente" | "pago" | "cancelado";
+            notes?: string;
+            items: { productId: string; quantity: number }[];
+        }) => client.ifoodEntries.update(payload),
+        onSuccess: () => {
+            toast.success("Entrada Ifood atualizada!");
+            queryClient.invalidateQueries({
+                queryKey: orpc.ifoodEntries.list.queryKey(),
+            });
+            setIsEditModalOpen(false);
+        },
+        onError: (error) => {
+            toast.error(`Erro ao atualizar entrada Ifood: ${error.message}`);
+        },
+    });
+
+    const updateManualEntry = useMutation({
+        mutationFn: async (payload: {
+            id: string;
+            date: string;
+            customerName: string;
+            whatsapp: string;
+            fulfillmentType: "entrega" | "retirada";
+            deliveryFee: number;
+            paymentMethod: "dinheiro" | "cartao" | "debito" | "pix" | "boleto";
+            amountPaid: number;
+            status: "pendente" | "pago" | "cancelado";
+            notes?: string;
+            items: { productId: string; quantity: number }[];
+        }) => client.manualEntries.update(payload),
+        onSuccess: () => {
+            toast.success("Entrada Manual atualizada!");
+            queryClient.invalidateQueries({
+                queryKey: orpc.manualEntries.list.queryKey(),
+            });
+            setIsEditModalOpen(false);
+        },
+        onError: (error) => {
+            toast.error(`Erro ao atualizar entrada Manual: ${error.message}`);
         },
     });
 
@@ -348,6 +460,83 @@ export default function Caixa() {
         });
     };
 
+    const openEditModal = (entry: {
+        id: string;
+        source: "instadelivery" | "ifood" | "manual";
+        date: string;
+        customerName: string;
+        whatsapp: string;
+        fulfillmentType: string;
+        deliveryFee: number;
+        paymentMethod: string;
+        amountPaid: number;
+        status: string;
+        notes: string | null;
+        items: { productId: string; quantity: number }[];
+    }) => {
+        setEditingSource(entry.source);
+        setEditingId(entry.id);
+        setEditForm({
+            date: entry.date.slice(0, 10),
+            customerName: entry.customerName,
+            whatsapp: entry.whatsapp,
+            fulfillmentType: entry.fulfillmentType,
+            deliveryFee: String(entry.deliveryFee ?? ""),
+            paymentMethod: entry.paymentMethod,
+            amountPaid: String(entry.amountPaid ?? ""),
+            status: entry.status,
+            notes: entry.notes ?? "",
+        });
+        setEditItems(
+            entry.items.map((item) => ({
+                productId: item.productId,
+                quantity: String(item.quantity),
+            }))
+        );
+        setIsEditModalOpen(true);
+    };
+
+    const handleSaveEdit = () => {
+        if (!editingSource || !editingId) {
+            return;
+        }
+
+        if (!validateItems(editItems)) {
+            return;
+        }
+
+        const payload = {
+            id: editingId,
+            date: editForm.date,
+            customerName: editForm.customerName.trim(),
+            whatsapp: editForm.whatsapp.trim(),
+            fulfillmentType: editForm.fulfillmentType as "entrega" | "retirada",
+            deliveryFee: Number(editForm.deliveryFee) || 0,
+            paymentMethod: editForm.paymentMethod as
+                | "dinheiro"
+                | "cartao"
+                | "debito"
+                | "pix"
+                | "boleto",
+            amountPaid: Number(editForm.amountPaid) || 0,
+            status: editForm.status as "pendente" | "pago" | "cancelado",
+            notes: editForm.notes.trim() ? editForm.notes.trim() : undefined,
+            items: buildItemsPayload(editItems),
+        };
+
+        if (editingSource === "instadelivery") {
+            updateInstadeliveryEntry.mutate(payload);
+            return;
+        }
+
+        if (editingSource === "ifood") {
+            updateIfoodEntry.mutate(payload);
+            return;
+        }
+
+        updateManualEntry.mutate(payload);
+    };
+
     const renderOrderItems = (
         items: { productId: string; quantity: string }[],
         setItems: Dispatch<SetStateAction<{ productId: string; quantity: string }[]>>
@@ -442,8 +631,197 @@ export default function Caixa() {
         </div>
     );
 
+    const isEditSaving =
+        updateInstadeliveryEntry.isPending ||
+        updateIfoodEntry.isPending ||
+        updateManualEntry.isPending;
+
     return (
         <div className="space-y-6">
+            <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
+                <DialogContent className="max-w-2xl">
+                    <DialogHeader>
+                        <DialogTitle className="flex items-center gap-2">
+                            <Edit className="h-5 w-5" />
+                            Editar Entrada
+                        </DialogTitle>
+                    </DialogHeader>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <Label>Data</Label>
+                            <Input
+                                type="date"
+                                value={editForm.date}
+                                onChange={(event) =>
+                                    setEditForm((prev) => ({
+                                        ...prev,
+                                        date: event.target.value,
+                                    }))
+                                }
+                            />
+                        </div>
+                        <div>
+                            <Label>Nome do Cliente</Label>
+                            <Input
+                                placeholder="Nome completo"
+                                value={editForm.customerName}
+                                onChange={(event) =>
+                                    setEditForm((prev) => ({
+                                        ...prev,
+                                        customerName: event.target.value,
+                                    }))
+                                }
+                            />
+                        </div>
+                        <div>
+                            <Label>WhatsApp</Label>
+                            <Input
+                                placeholder="(00) 00000-0000"
+                                value={editForm.whatsapp}
+                                onChange={(event) =>
+                                    setEditForm((prev) => ({
+                                        ...prev,
+                                        whatsapp: event.target.value,
+                                    }))
+                                }
+                            />
+                        </div>
+                        <div>
+                            <Label>Entrega/Retirada</Label>
+                            <Select
+                                value={editForm.fulfillmentType}
+                                onValueChange={(value) =>
+                                    setEditForm((prev) => ({
+                                        ...prev,
+                                        fulfillmentType: value ?? "",
+                                    }))
+                                }
+                            >
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Selecione" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="entrega">Entrega</SelectItem>
+                                    <SelectItem value="retirada">Retirada</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div>
+                            <Label>Taxa de Entrega</Label>
+                            <Input
+                                type="number"
+                                step="0.01"
+                                placeholder="R$ 0,00"
+                                value={editForm.deliveryFee}
+                                onChange={(event) =>
+                                    setEditForm((prev) => ({
+                                        ...prev,
+                                        deliveryFee: event.target.value,
+                                    }))
+                                }
+                            />
+                        </div>
+                        <div>
+                            <Label>Forma de Pagamento</Label>
+                            <Select
+                                value={editForm.paymentMethod}
+                                onValueChange={(value) =>
+                                    setEditForm((prev) => ({
+                                        ...prev,
+                                        paymentMethod: value ?? "",
+                                    }))
+                                }
+                            >
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Selecione">
+                                        {(value: string) =>
+                                            paymentLabels[String(value)] ?? "Selecione"
+                                        }
+                                    </SelectValue>
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="dinheiro">Dinheiro</SelectItem>
+                                    <SelectItem value="cartao">Cartão</SelectItem>
+                                    <SelectItem value="debito">Débito</SelectItem>
+                                    <SelectItem value="pix">PIX</SelectItem>
+                                    <SelectItem value="boleto">Boleto</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div>
+                            <Label>Valor Pago</Label>
+                            <Input
+                                type="number"
+                                step="0.01"
+                                placeholder="R$ 0,00"
+                                value={editForm.amountPaid}
+                                onChange={(event) =>
+                                    setEditForm((prev) => ({
+                                        ...prev,
+                                        amountPaid: event.target.value,
+                                    }))
+                                }
+                            />
+                        </div>
+                        <div>
+                            <Label>Status</Label>
+                            <Select
+                                value={editForm.status}
+                                onValueChange={(value) =>
+                                    setEditForm((prev) => ({
+                                        ...prev,
+                                        status: value ?? "pago",
+                                    }))
+                                }
+                            >
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Selecione">
+                                        {(value: string) =>
+                                            statusLabels[String(value)] ?? "Selecione"
+                                        }
+                                    </SelectValue>
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="pendente">Pendente</SelectItem>
+                                    <SelectItem value="pago">Pago</SelectItem>
+                                    <SelectItem value="cancelado">Cancelado</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div className="md:col-span-2">
+                            <Label>Itens do Pedido</Label>
+                            <div className="mt-2">
+                                {renderOrderItems(editItems, setEditItems)}
+                            </div>
+                        </div>
+                        <div className="md:col-span-2">
+                            <Label>Observacao</Label>
+                            <Textarea
+                                placeholder="Observacao adicional"
+                                rows={2}
+                                value={editForm.notes}
+                                onChange={(event) =>
+                                    setEditForm((prev) => ({
+                                        ...prev,
+                                        notes: event.target.value,
+                                    }))
+                                }
+                            />
+                        </div>
+                    </div>
+                    <div className="flex justify-end">
+                        <Button
+                            size="lg"
+                            className="gap-2"
+                            onClick={handleSaveEdit}
+                            disabled={isEditSaving}
+                        >
+                            <ArrowUpRight className="h-4 w-4" />
+                            {isEditSaving ? "Salvando..." : "Salvar"}
+                        </Button>
+                    </div>
+                </DialogContent>
+            </Dialog>
             <div>
                 <h1 className="text-3xl font-bold text-foreground mb-2">
                     Caixa - Entradas e Saídas
@@ -1105,7 +1483,7 @@ export default function Caixa() {
                                                         <Button
                                                             variant="ghost"
                                                             size="icon"
-                                                            onClick={() => toast.info("Edicao em breve")}
+                                                            onClick={() => openEditModal(entry)}
                                                         >
                                                             <Edit className="h-4 w-4" />
                                                         </Button>

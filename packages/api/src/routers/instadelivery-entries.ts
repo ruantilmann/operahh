@@ -26,6 +26,10 @@ const createInput = z.object({
   items: z.array(entryItemInput).min(1),
 });
 
+const updateInput = createInput.extend({
+  id: z.string().min(1),
+});
+
 const entryItemOutput = z.object({
   id: z.string(),
   productId: z.string(),
@@ -149,6 +153,87 @@ export const instadeliveryEntriesRouter = {
           status: statusMap[input.status ?? "pago"],
           notes: input.notes?.trim() || null,
           items: {
+            create: input.items.map((item) => {
+              const product = productMap.get(item.productId);
+              if (!product) {
+                throw new ORPCError("NOT_FOUND");
+              }
+
+              return {
+                productId: item.productId,
+                quantity: item.quantity,
+                productNameSnapshot: product.name,
+                unitPriceSnapshot: product.price,
+              };
+            }),
+          },
+        },
+        include: { items: true },
+      });
+
+      return {
+        id: entry.id,
+        date: entry.date.toISOString(),
+        customerName: entry.customerName,
+        whatsapp: entry.whatsapp,
+        fulfillmentType:
+          fulfillmentFromDb[entry.fulfillmentType as keyof typeof fulfillmentFromDb],
+        deliveryFee: entry.deliveryFee.toNumber(),
+        paymentMethod:
+          paymentMethodFromDb[entry.paymentMethod as keyof typeof paymentMethodFromDb],
+        amountPaid: entry.amountPaid.toNumber(),
+        status: statusFromDb[entry.status as keyof typeof statusFromDb],
+        notes: entry.notes,
+        items: entry.items.map((item: any) => ({
+          id: item.id,
+          productId: item.productId,
+          quantity: item.quantity,
+          productNameSnapshot: item.productNameSnapshot,
+          unitPriceSnapshot: item.unitPriceSnapshot.toNumber(),
+        })),
+        createdAt: entry.createdAt.toISOString(),
+        updatedAt: entry.updatedAt.toISOString(),
+      };
+    }),
+
+  update: protectedProcedure
+    .input(updateInput)
+    .output(entryOutput)
+    .handler(async ({ input }) => {
+      const entryExists = await prisma.instaDeliveryEntry.findUnique({
+        where: { id: input.id },
+        select: { id: true },
+      });
+
+      if (!entryExists) {
+        throw new ORPCError("NOT_FOUND");
+      }
+
+      const uniqueProductIds = Array.from(new Set(input.items.map((item) => item.productId)));
+      const products = await prisma.product.findMany({
+        where: { id: { in: uniqueProductIds } },
+      });
+
+      if (products.length !== uniqueProductIds.length) {
+        throw new ORPCError("NOT_FOUND");
+      }
+
+      const productMap = new Map(products.map((product) => [product.id, product]));
+
+      const entry = await prisma.instaDeliveryEntry.update({
+        where: { id: input.id },
+        data: {
+          date: input.date,
+          customerName: input.customerName.trim(),
+          whatsapp: input.whatsapp.trim(),
+          fulfillmentType: fulfillmentMap[input.fulfillmentType],
+          deliveryFee: input.deliveryFee,
+          paymentMethod: paymentMethodMap[input.paymentMethod],
+          amountPaid: input.amountPaid,
+          status: statusMap[input.status ?? "pago"],
+          notes: input.notes?.trim() || null,
+          items: {
+            deleteMany: {},
             create: input.items.map((item) => {
               const product = productMap.get(item.productId);
               if (!product) {
