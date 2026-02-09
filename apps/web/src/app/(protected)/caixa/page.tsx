@@ -806,7 +806,7 @@ export default function Caixa() {
     ) => (
         <div className="space-y-3">
             {items.map((item, index) => (
-                <div key={`item-${index}`} className="grid grid-cols-1 md:grid-cols-[1fr_140px] gap-3">
+                <div key={`item-${index}`} className="grid grid-cols-1 md:grid-cols-[1fr_140px_40px] gap-3">
                     <div>
                         <Label>Produto</Label>
                         <Select
@@ -879,6 +879,19 @@ export default function Caixa() {
                             }
                         />
                     </div>
+                    <div className="flex items-end">
+                        <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            onClick={() =>
+                                setItems((prev) => prev.filter((_, entryIndex) => entryIndex !== index))
+                            }
+                            disabled={items.length <= 1}
+                        >
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                    </div>
                 </div>
             ))}
             <Button
@@ -948,7 +961,7 @@ export default function Caixa() {
                 </DialogContent>
             </Dialog>
             <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
-                <DialogContent className="max-w-2xl">
+                <DialogContent className="sm:max-w-4xl">
                     <DialogHeader>
                         <DialogTitle className="flex items-center gap-2">
                             <Edit className="h-5 w-5" />
@@ -1132,7 +1145,7 @@ export default function Caixa() {
                 </DialogContent>
             </Dialog>
             <Dialog open={isExitEditModalOpen} onOpenChange={setIsExitEditModalOpen}>
-                <DialogContent className="max-w-md">
+                <DialogContent className="sm:max-w-3xl">
                     <DialogHeader>
                         <DialogTitle className="flex items-center gap-2">
                             <Edit className="h-5 w-5" />
