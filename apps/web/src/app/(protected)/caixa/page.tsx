@@ -1330,7 +1330,7 @@ export default function Caixa() {
                                         </Button>
                                     }
                                 />
-                                <DialogContent className="max-w-2xl">
+                                <DialogContent className="sm:max-w-4xl">
                                     <DialogHeader>
                                         <DialogTitle className="flex items-center gap-2">
                                             <Plus className="h-5 w-5 text-green-500" />
@@ -1345,7 +1345,7 @@ export default function Caixa() {
                                         </TabsList>
 
                                         <TabsContent value="instadelivery" className="space-y-4 mt-4">
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                                 <div>
                                                     <Label>Data</Label>
                                                     <Input
@@ -1522,7 +1522,7 @@ export default function Caixa() {
                                         </TabsContent>
 
                                         <TabsContent value="ifood" className="space-y-4 mt-4">
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                                 <div>
                                                     <Label>Data</Label>
                                                     <Input
@@ -1699,7 +1699,7 @@ export default function Caixa() {
                                         </TabsContent>
 
                                         <TabsContent value="manual" className="space-y-4 mt-4">
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                                 <div>
                                                     <Label>Data</Label>
                                                     <Input
@@ -1960,14 +1960,14 @@ export default function Caixa() {
                                         </Button>
                                     }
                                 />
-                                <DialogContent className="max-w-md">
+                                <DialogContent className="sm:max-w-3xl">
                                     <DialogHeader>
                                         <DialogTitle className="flex items-center gap-2">
                                             <Plus className="h-5 w-5 text-destructive" />
                                             Registrar Saída
                                         </DialogTitle>
                                     </DialogHeader>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
                                         <div>
                                             <Label>Data</Label>
                                             <Input
