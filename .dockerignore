@@ -15,5 +15,4 @@ pnpm-debug.log
 *.log
 .DS_Store
 Thumbs.db
-packages/db/prisma/migrations
 packages/db/prisma/generated

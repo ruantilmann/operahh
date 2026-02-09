@@ -10,11 +10,26 @@ export const auth = betterAuth({
     provider: "postgresql",
   }),
 
-  trustedOrigins: [env.CORS_ORIGIN],
+  trustedOrigins: [env.CORS_ORIGIN, env.BETTER_AUTH_URL],
   emailAndPassword: {
     enabled: true,
   },
   advanced: {
+    crossSubDomainCookies: {
+      enabled: true,
+      domain: env.BETTER_AUTH_COOKIE_DOMAIN,
+    },
+    cookies: {
+      session_token: {
+        attributes: {
+          domain: env.BETTER_AUTH_COOKIE_DOMAIN,
+          path: "/",
+          sameSite: isProduction ? "none" : "lax",
+          secure: isProduction,
+          httpOnly: true,
+        },
+      },
+    },
     defaultCookieAttributes: {
       sameSite: isProduction ? "none" : "lax",
       secure: isProduction,
