@@ -10,6 +10,8 @@ import { Textarea } from "@/components/ui/textarea";
 import {
     Dialog,
     DialogContent,
+    DialogDescription,
+    DialogFooter,
     DialogHeader,
     DialogTitle,
     DialogTrigger,
@@ -72,6 +74,20 @@ export default function Caixa() {
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [editingSource, setEditingSource] = useState<"instadelivery" | "ifood" | "manual" | null>(null);
     const [editingId, setEditingId] = useState<string | null>(null);
+    const [pendingDelete, setPendingDelete] = useState<
+        | {
+              type: "entry";
+              id: string;
+              source: "instadelivery" | "ifood" | "manual";
+              label: string;
+          }
+        | {
+              type: "exit";
+              id: string;
+              label: string;
+          }
+        | null
+    >(null);
     const queryClient = useQueryClient();
     const today = new Date().toISOString().slice(0, 10);
     const [instaItems, setInstaItems] = useState([{ productId: "", quantity: "1" }]);
@@ -416,6 +432,62 @@ export default function Caixa() {
         },
     });
 
+    const deleteInstadeliveryEntry = useMutation({
+        mutationFn: async (id: string) => client.instadeliveryEntries.delete({ id }),
+        onSuccess: () => {
+            toast.success("Entrada InstaDelivery removida!");
+            queryClient.invalidateQueries({
+                queryKey: orpc.instadeliveryEntries.list.queryKey(),
+            });
+            setPendingDelete(null);
+        },
+        onError: (error) => {
+            toast.error(`Erro ao remover entrada InstaDelivery: ${error.message}`);
+        },
+    });
+
+    const deleteIfoodEntry = useMutation({
+        mutationFn: async (id: string) => client.ifoodEntries.delete({ id }),
+        onSuccess: () => {
+            toast.success("Entrada Ifood removida!");
+            queryClient.invalidateQueries({
+                queryKey: orpc.ifoodEntries.list.queryKey(),
+            });
+            setPendingDelete(null);
+        },
+        onError: (error) => {
+            toast.error(`Erro ao remover entrada Ifood: ${error.message}`);
+        },
+    });
+
+    const deleteManualEntry = useMutation({
+        mutationFn: async (id: string) => client.manualEntries.delete({ id }),
+        onSuccess: () => {
+            toast.success("Entrada Manual removida!");
+            queryClient.invalidateQueries({
+                queryKey: orpc.manualEntries.list.queryKey(),
+            });
+            setPendingDelete(null);
+        },
+        onError: (error) => {
+            toast.error(`Erro ao remover entrada Manual: ${error.message}`);
+        },
+    });
+
+    const deleteExit = useMutation({
+        mutationFn: async (id: string) => client.exits.delete({ id }),
+        onSuccess: () => {
+            toast.success("Saida removida!");
+            queryClient.invalidateQueries({
+                queryKey: orpc.exits.list.queryKey(),
+            });
+            setPendingDelete(null);
+        },
+        onError: (error) => {
+            toast.error(`Erro ao remover saida: ${error.message}`);
+        },
+    });
+
     const buildItemsPayload = (items: { productId: string; quantity: string }[]) =>
         items
             .map((item) => ({
@@ -681,6 +753,53 @@ export default function Caixa() {
         updateManualEntry.mutate(payload);
     };
 
+    const requestDeleteEntry = (entry: {
+        id: string;
+        source: "instadelivery" | "ifood" | "manual";
+        customerName: string;
+        date: string;
+    }) => {
+        const formattedDate = format(new Date(entry.date), "dd/MM/yyyy");
+        setPendingDelete({
+            type: "entry",
+            id: entry.id,
+            source: entry.source,
+            label: `${entry.customerName} • ${formattedDate}`,
+        });
+    };
+
+    const requestDeleteExit = (exit: { id: string; description: string; date: string }) => {
+        const formattedDate = format(new Date(exit.date), "dd/MM/yyyy");
+        setPendingDelete({
+            type: "exit",
+            id: exit.id,
+            label: `${exit.description} • ${formattedDate}`,
+        });
+    };
+
+    const handleConfirmDelete = () => {
+        if (!pendingDelete) {
+            return;
+        }
+
+        if (pendingDelete.type === "exit") {
+            deleteExit.mutate(pendingDelete.id);
+            return;
+        }
+
+        if (pendingDelete.source === "instadelivery") {
+            deleteInstadeliveryEntry.mutate(pendingDelete.id);
+            return;
+        }
+
+        if (pendingDelete.source === "ifood") {
+            deleteIfoodEntry.mutate(pendingDelete.id);
+            return;
+        }
+
+        deleteManualEntry.mutate(pendingDelete.id);
+    };
+
     const renderOrderItems = (
         items: { productId: string; quantity: string }[],
         setItems: Dispatch<SetStateAction<{ productId: string; quantity: string }[]>>
@@ -780,8 +899,54 @@ export default function Caixa() {
         updateIfoodEntry.isPending ||
         updateManualEntry.isPending;
 
+    const isDeleting =
+        deleteInstadeliveryEntry.isPending ||
+        deleteIfoodEntry.isPending ||
+        deleteManualEntry.isPending ||
+        deleteExit.isPending;
+
+    const deleteMessage =
+        pendingDelete?.type === "entry"
+            ? `Tem certeza que deseja excluir a entrada ${pendingDelete.label}?`
+            : pendingDelete?.type === "exit"
+              ? `Tem certeza que deseja excluir a saída ${pendingDelete.label}?`
+              : "Tem certeza que deseja excluir este registro?";
+
     return (
         <div className="space-y-6">
+            <Dialog
+                open={Boolean(pendingDelete)}
+                onOpenChange={(open) => {
+                    if (!open) {
+                        setPendingDelete(null);
+                    }
+                }}
+            >
+                <DialogContent className="max-w-md">
+                    <DialogHeader>
+                        <DialogTitle>Confirmar exclusão</DialogTitle>
+                        <DialogDescription>{deleteMessage}</DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => setPendingDelete(null)}
+                            disabled={isDeleting}
+                        >
+                            Cancelar
+                        </Button>
+                        <Button
+                            type="button"
+                            variant="destructive"
+                            onClick={handleConfirmDelete}
+                            disabled={isDeleting}
+                        >
+                            {isDeleting ? "Excluindo..." : "Excluir"}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
             <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
                 <DialogContent className="max-w-2xl">
                     <DialogHeader>
@@ -1767,7 +1932,7 @@ export default function Caixa() {
                                                         <Button
                                                             variant="ghost"
                                                             size="icon"
-                                                            onClick={() => toast.info("Exclusao em breve")}
+                                                            onClick={() => requestDeleteEntry(entry)}
                                                         >
                                                             <Trash2 className="h-4 w-4 text-destructive" />
                                                         </Button>
@@ -1975,13 +2140,22 @@ export default function Caixa() {
                                                 </TableCell>
                                                 <TableCell>{item.responsible}</TableCell>
                                                 <TableCell className="text-right">
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="icon"
-                                                        onClick={() => openExitEditModal(item)}
-                                                    >
-                                                        <Edit className="h-4 w-4" />
-                                                    </Button>
+                                                    <div className="flex items-center justify-end gap-2">
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="icon"
+                                                            onClick={() => openExitEditModal(item)}
+                                                        >
+                                                            <Edit className="h-4 w-4" />
+                                                        </Button>
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="icon"
+                                                            onClick={() => requestDeleteExit(item)}
+                                                        >
+                                                            <Trash2 className="h-4 w-4 text-destructive" />
+                                                        </Button>
+                                                    </div>
                                                 </TableCell>
                                             </TableRow>
                                         ))

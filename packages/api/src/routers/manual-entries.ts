@@ -30,6 +30,10 @@ const updateInput = createInput.extend({
   id: z.string().min(1),
 });
 
+const deleteInput = z.object({
+  id: z.string().min(1),
+});
+
 const entryItemOutput = z.object({
   id: z.string(),
   productId: z.string(),
@@ -275,5 +279,25 @@ export const manualEntriesRouter = {
         createdAt: entry.createdAt.toISOString(),
         updatedAt: entry.updatedAt.toISOString(),
       };
+    }),
+
+  delete: protectedProcedure
+    .input(deleteInput)
+    .output(z.object({ success: z.boolean() }))
+    .handler(async ({ input }) => {
+      const entryExists = await prisma.manualEntry.findUnique({
+        where: { id: input.id },
+        select: { id: true },
+      });
+
+      if (!entryExists) {
+        throw new ORPCError("NOT_FOUND");
+      }
+
+      await prisma.manualEntry.delete({
+        where: { id: input.id },
+      });
+
+      return { success: true };
     }),
 };

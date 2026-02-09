@@ -20,6 +20,10 @@ const updateInput = createInput.extend({
   id: z.string().min(1),
 });
 
+const deleteInput = z.object({
+  id: z.string().min(1),
+});
+
 const exitOutput = z.object({
   id: z.string(),
   date: z.string(),
@@ -158,5 +162,25 @@ export const exitsRouter = {
         createdAt: exit.createdAt.toISOString(),
         updatedAt: exit.updatedAt.toISOString(),
       };
+    }),
+
+  delete: protectedProcedure
+    .input(deleteInput)
+    .output(z.object({ success: z.boolean() }))
+    .handler(async ({ input }) => {
+      const exitExists = await prisma.cashExit.findUnique({
+        where: { id: input.id },
+        select: { id: true },
+      });
+
+      if (!exitExists) {
+        throw new ORPCError("NOT_FOUND");
+      }
+
+      await prisma.cashExit.delete({
+        where: { id: input.id },
+      });
+
+      return { success: true };
     }),
 };
