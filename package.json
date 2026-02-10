@@ -27,6 +27,9 @@
   "dependencies": {
     "@operahh/env": "*",
     "dotenv": "^17.2.2",
+    "fastify": "^5.7.3",
+    "hono": "^4.11.7",
+    "next": "^16.1.5",
     "zod": "^4.1.13"
   },
   "devDependencies": {
