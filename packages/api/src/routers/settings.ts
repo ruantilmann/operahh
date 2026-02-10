@@ -70,7 +70,7 @@ export const settingsRouter = {
         },
       });
 
-      return users.map((user) => ({
+      return users.map((user: (typeof users)[number]) => ({
         ...user,
         createdAt: user.createdAt.toISOString(),
       }));

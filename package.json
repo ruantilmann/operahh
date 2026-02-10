@@ -27,9 +27,6 @@
   "dependencies": {
     "@operahh/env": "*",
     "dotenv": "^17.2.2",
-    "fastify": "^5.7.3",
-    "hono": "^4.11.7",
-    "next": "^16.1.5",
     "zod": "^4.1.13"
   },
   "devDependencies": {
@@ -37,6 +34,14 @@
     "@types/node": "^22.13.14",
     "turbo": "^2.6.3",
     "typescript": "^5"
+  },
+  "overrides": {
+    "tar": "7.5.7",
+    "glob": "11.1.0",
+    "lodash": "4.17.23",
+    "@isaacs/brace-expansion": "5.0.1",
+    "@modelcontextprotocol/sdk": "1.26.0",
+    "hono": "4.11.7"
   },
   "packageManager": "npm@11.6.2"
 }

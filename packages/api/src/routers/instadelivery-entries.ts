@@ -1,5 +1,6 @@
 import { ORPCError } from "@orpc/server";
 import prisma from "@operahh/db";
+import type { Prisma } from "../../../db/prisma/generated/client";
 import { z } from "zod";
 
 import { protectedProcedure } from "../index";
@@ -96,6 +97,12 @@ const fulfillmentFromDb = {
   RETIRADA: "retirada",
 } as const;
 
+type InstaDeliveryEntryWithItems = Prisma.InstaDeliveryEntryGetPayload<{
+  include: { items: true };
+}>;
+
+type ProductSnapshot = Prisma.ProductGetPayload<{}>;
+
 export const instadeliveryEntriesRouter = {
   list: protectedProcedure
     .output(z.array(entryOutput))
@@ -143,9 +150,11 @@ export const instadeliveryEntriesRouter = {
         throw new ORPCError("NOT_FOUND");
       }
 
-      const productMap = new Map(products.map((product) => [product.id, product]));
+      const productMap = new Map<string, ProductSnapshot>(
+        products.map((product: ProductSnapshot) => [product.id, product])
+      );
 
-      const entry = await prisma.instaDeliveryEntry.create({
+      const entry: InstaDeliveryEntryWithItems = await prisma.instaDeliveryEntry.create({
         data: {
           date: input.date,
           customerName: input.customerName.trim(),
@@ -164,7 +173,9 @@ export const instadeliveryEntriesRouter = {
               }
 
               return {
-                productId: item.productId,
+                product: {
+                  connect: { id: item.productId },
+                },
                 quantity: item.quantity,
                 productNameSnapshot: product.name,
                 unitPriceSnapshot: product.price,
@@ -222,9 +233,11 @@ export const instadeliveryEntriesRouter = {
         throw new ORPCError("NOT_FOUND");
       }
 
-      const productMap = new Map(products.map((product) => [product.id, product]));
+      const productMap = new Map<string, ProductSnapshot>(
+        products.map((product: ProductSnapshot) => [product.id, product])
+      );
 
-      const entry = await prisma.instaDeliveryEntry.update({
+      const entry: InstaDeliveryEntryWithItems = await prisma.instaDeliveryEntry.update({
         where: { id: input.id },
         data: {
           date: input.date,
@@ -245,7 +258,9 @@ export const instadeliveryEntriesRouter = {
               }
 
               return {
-                productId: item.productId,
+                product: {
+                  connect: { id: item.productId },
+                },
                 quantity: item.quantity,
                 productNameSnapshot: product.name,
                 unitPriceSnapshot: product.price,

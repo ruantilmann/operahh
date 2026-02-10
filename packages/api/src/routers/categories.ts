@@ -39,7 +39,7 @@ export const categoriesRouter = {
         },
       });
 
-      return categories.map((category) => ({
+      return categories.map((category: (typeof categories)[number]) => ({
         id: category.id,
         name: category.name,
         type: category.type,

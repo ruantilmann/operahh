@@ -52,7 +52,7 @@ export const productsRouter = {
         },
       });
 
-      return products.map((product) => ({
+      return products.map((product: (typeof products)[number]) => ({
         id: product.id,
         name: product.name,
         price: product.price.toNumber(),

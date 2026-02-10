@@ -1,20 +1,25 @@
-import { auth } from '@operahh/auth';
-import { NextRequest } from 'next/server';
+import { env } from "@operahh/env/web";
+import { NextRequest } from "next/server";
 
 export async function GET(request: NextRequest) {
   try {
-    // Get the session using Better Auth
-    const session = await auth.api.getSession({
+    const apiUrl = new URL("/api/auth/get-session", env.NEXT_PUBLIC_SERVER_URL);
+    const response = await fetch(apiUrl, {
+      method: "GET",
       headers: Object.fromEntries(request.headers.entries()),
+      credentials: "include",
     });
 
-    if (session) {
-      return Response.json({ authenticated: true, user: session.user });
-    } else {
-      return Response.json({ authenticated: false });
-    }
+    const body = await response.text();
+    return new Response(body, {
+      status: response.status,
+      headers: response.headers,
+    });
   } catch (error) {
-    console.error('Session validation error:', error);
-    return Response.json({ authenticated: false, error: 'Internal server error' }, { status: 500 });
+    console.error("Session validation error:", error);
+    return Response.json(
+      { authenticated: false, error: "Internal server error" },
+      { status: 500 }
+    );
   }
 }
