@@ -13,7 +13,7 @@ export default function Providers({ children }: { children: React.ReactNode }) {
     <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange themes={["light", "dark", "caju"]}>
       <QueryClientProvider client={queryClient}>
         {children}
-        <ReactQueryDevtools />
+        {process.env.NODE_ENV !== "production" ? <ReactQueryDevtools /> : null}
       </QueryClientProvider>
       <Toaster richColors />
     </ThemeProvider>

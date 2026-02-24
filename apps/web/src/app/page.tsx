@@ -1,8 +1,3 @@
-"use client";
-import { useQuery } from "@tanstack/react-query";
-
-import { orpc } from "@/utils/orpc";
-
 const TITLE_TEXT = `
  ██████╗ ███████╗████████╗████████╗███████╗██████╗
  ██╔══██╗██╔════╝╚══██╔══╝╚══██╔══╝██╔════╝██╔══██╗
@@ -20,7 +15,6 @@ const TITLE_TEXT = `
  `;
 
 export default function Home() {
-
   return (
     <pre className="overflow-x-auto font-mono text-sm">{TITLE_TEXT}</pre>
   );
