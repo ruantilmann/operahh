@@ -13,7 +13,16 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-const profitBoxes = [
+type ProfitBoxColor = "primary" | "accent" | "success" | "warning" | "destructive";
+
+const profitBoxes: Array<{
+    name: string;
+    icon: typeof TrendingUp;
+    percentage: number;
+    currentValue: number;
+    color: ProfitBoxColor;
+    description: string;
+}> = [
     {
         name: "Reinvestimento",
         icon: TrendingUp,
@@ -56,6 +65,14 @@ const profitBoxes = [
     },
 ];
 
+const colorClasses: Record<ProfitBoxColor, string> = {
+    primary: "border-l-primary text-primary",
+    accent: "border-l-accent text-accent",
+    success: "border-l-green-500 text-green-500",
+    warning: "border-l-yellow-500 text-yellow-500",
+    destructive: "border-l-destructive text-destructive",
+};
+
 export default function Lucro() {
     const totalLucro = profitBoxes.reduce((sum, box) => sum + box.currentValue, 0);
 
@@ -91,13 +108,14 @@ export default function Lucro() {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {profitBoxes.map((box, index) => {
                     const Icon = box.icon;
+                    const colorClass = colorClasses[box.color] ?? "";
                     return (
                         <Card
                             key={index}
                             className={cn(
                                 "p-6 transition-all hover:shadow-lg",
                                 "border-l-4",
-                                `border-l-${box.color}`
+                                colorClass
                             )}
                         >
                             <div className="flex items-start justify-between mb-4">
@@ -108,7 +126,7 @@ export default function Lucro() {
                                             "bg-secondary"
                                         )}
                                     >
-                                        <Icon className={cn("h-6 w-6", `text-${box.color}`)} />
+                                        <Icon className={cn("h-6 w-6", colorClass)} />
                                     </div>
                                     <div>
                                         <h3 className="font-semibold text-lg">{box.name}</h3>

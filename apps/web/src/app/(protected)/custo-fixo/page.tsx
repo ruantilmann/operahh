@@ -14,7 +14,15 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-const fixedCosts = [
+type FixedCostColor = "primary" | "warning" | "accent" | "destructive" | "secondary";
+
+const fixedCosts: Array<{
+    name: string;
+    icon: typeof Home;
+    value: number;
+    lastUse: string;
+    color: FixedCostColor;
+}> = [
     {
         name: "Aluguel",
         icon: Home,
@@ -59,6 +67,14 @@ const fixedCosts = [
     },
 ];
 
+const colorClasses: Record<FixedCostColor, string> = {
+    primary: "border-l-primary text-primary",
+    warning: "border-l-yellow-500 text-yellow-500",
+    accent: "border-l-accent text-accent",
+    destructive: "border-l-destructive text-destructive",
+    secondary: "border-l-secondary text-secondary",
+};
+
 export default function CustoFixo() {
     const totalFixed = fixedCosts.reduce((sum, cost) => sum + cost.value, 0);
 
@@ -96,13 +112,14 @@ export default function CustoFixo() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {fixedCosts.map((cost, index) => {
                     const Icon = cost.icon;
+                    const colorClass = colorClasses[cost.color] ?? "";
                     return (
                         <Card
                             key={index}
                             className={cn(
                                 "p-6 transition-all hover:shadow-lg cursor-pointer",
                                 "border-l-4",
-                                `border-l-${cost.color}`
+                                colorClass
                             )}
                         >
                             <div className="flex items-start justify-between mb-4">
@@ -112,7 +129,7 @@ export default function CustoFixo() {
                                         "bg-secondary"
                                     )}
                                 >
-                                    <Icon className={cn("h-6 w-6", `text-${cost.color}`)} />
+                                    <Icon className={cn("h-6 w-6", colorClass)} />
                                 </div>
                                 <Button variant="ghost" size="sm">
                                     Editar

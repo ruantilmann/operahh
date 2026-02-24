@@ -20,38 +20,19 @@ const baseCorsConfig = {
   maxAge: 86400,
 };
 
-const rpcHandler = new RPCHandler(appRouter, {
-  plugins: [
-    new CORSPlugin({
-      origin: env.CORS_ORIGIN,
-      credentials: true,
-      allowHeaders: ["Content-Type", "Authorization"],
-    }),
-  ],
-  interceptors: [
-    onError((error) => {
-      console.error(error);
-    }),
-  ],
-});
-
-const apiHandler = new OpenAPIHandler(appRouter, {
-  plugins: [
-    new OpenAPIReferencePlugin({
-      schemaConverters: [new ZodToJsonSchemaConverter()],
-    }),
-  ],
-  interceptors: [
-    onError((error) => {
-      console.error(error);
-    }),
-  ],
-});
+let rpcHandler: RPCHandler<any>;
+let apiHandler: OpenAPIHandler<any>;
 
 const fastify = Fastify({
   logger: true,
   serverFactory: (fastifyHandler) => {
     const server = createServer(async (req, res) => {
+      if (!rpcHandler || !apiHandler) {
+        fastify.log.error("RPC handlers not initialized");
+        res.statusCode = 500;
+        res.end();
+        return;
+      }
       const { matched } = await rpcHandler.handle(req, res, {
         context: await createContext(req.headers),
         prefix: "/rpc",
@@ -75,6 +56,34 @@ const fastify = Fastify({
 
     return server;
   },
+});
+
+rpcHandler = new RPCHandler(appRouter, {
+  plugins: [
+    new CORSPlugin({
+      origin: env.CORS_ORIGIN,
+      credentials: true,
+      allowHeaders: ["Content-Type", "Authorization"],
+    }),
+  ],
+  interceptors: [
+    onError((error) => {
+      fastify.log.error({ err: error }, "RPC error");
+    }),
+  ],
+});
+
+apiHandler = new OpenAPIHandler(appRouter, {
+  plugins: [
+    new OpenAPIReferencePlugin({
+      schemaConverters: [new ZodToJsonSchemaConverter()],
+    }),
+  ],
+  interceptors: [
+    onError((error) => {
+      fastify.log.error({ err: error }, "OpenAPI error");
+    }),
+  ],
 });
 
 fastify.register(fastifyCors, baseCorsConfig);
@@ -117,5 +126,5 @@ fastify.listen({ port: 3000, host: "0.0.0.0" }, (err) => {
     fastify.log.error(err);
     process.exit(1);
   }
-  console.log("Server running on port 3000");
+  fastify.log.info("Server running on port 3000");
 });
