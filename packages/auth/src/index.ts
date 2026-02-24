@@ -4,6 +4,17 @@ import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 
 const isProduction = env.NODE_ENV === "production";
+const cookieDomain = env.BETTER_AUTH_COOKIE_DOMAIN;
+const baseCookieAttributes = {
+  sameSite: (isProduction ? "none" : "lax") as "none" | "lax",
+  secure: isProduction,
+  httpOnly: true,
+};
+const sessionTokenAttributes = {
+  ...baseCookieAttributes,
+  path: "/",
+  ...(isProduction && cookieDomain ? { domain: cookieDomain } : {}),
+};
 
 export const auth = betterAuth({
   database: prismaAdapter(prisma, {
@@ -15,26 +26,20 @@ export const auth = betterAuth({
     enabled: true,
   },
   advanced: {
-    crossSubDomainCookies: {
-      enabled: true,
-      domain: env.BETTER_AUTH_COOKIE_DOMAIN,
-    },
+    ...(isProduction && cookieDomain
+      ? {
+          crossSubDomainCookies: {
+            enabled: true,
+            domain: cookieDomain,
+          },
+        }
+      : {}),
     cookies: {
       session_token: {
-        attributes: {
-          domain: env.BETTER_AUTH_COOKIE_DOMAIN,
-          path: "/",
-          sameSite: isProduction ? "none" : "lax",
-          secure: isProduction,
-          httpOnly: true,
-        },
+        attributes: sessionTokenAttributes,
       },
     },
-    defaultCookieAttributes: {
-      sameSite: isProduction ? "none" : "lax",
-      secure: isProduction,
-      httpOnly: true,
-    },
+    defaultCookieAttributes: baseCookieAttributes,
   },
   plugins: [],
 });

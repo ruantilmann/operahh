@@ -1,4 +1,7 @@
+import { headers } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
+
+import { auth } from "@operahh/auth";
 
 export async function proxy(request: NextRequest) {
   // Identifica a rota atual.
@@ -24,12 +27,11 @@ export async function proxy(request: NextRequest) {
   );
 
   if (isProtectedRoute && !isLoginRoute) {
-    // Aceita nomes de cookie de sessao regulares ou seguros.
-    const sessionToken =
-      request.cookies.get("better-auth.session_token")?.value ||
-      request.cookies.get("__Secure-better-auth.session_token")?.value;
+    const session = await auth.api.getSession({
+      headers: await headers(),
+    });
 
-    if (!sessionToken) {
+    if (!session) {
       // Usuarios sem autenticacao sao redirecionados para login.
       return NextResponse.redirect(new URL("/login", request.url));
     }

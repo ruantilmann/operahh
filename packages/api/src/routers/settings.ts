@@ -1,3 +1,4 @@
+import { ORPCError } from "@orpc/server";
 import { z } from "zod";
 import prisma from "@operahh/db";
 import { env } from "@operahh/env/server";
@@ -39,7 +40,7 @@ export const settingsRouter = {
     .handler(async ({ context }) => {
       const user = context.session?.user;
       if (!user) {
-        throw new Error("Usuário não encontrado");
+        throw new ORPCError("UNAUTHORIZED");
       }
 
       // Retorna todos os campos relevantes do usuário
@@ -77,7 +78,7 @@ export const settingsRouter = {
     }),
 
    // Endpoint protegido para atualizar as informações do usuário logado
-   updateUserSettings: protectedProcedure
+    updateUserSettings: protectedProcedure
       .input(z.object({
         name: z.string().min(1).max(100).optional(),
         email: z.string().email().optional(),
@@ -86,7 +87,7 @@ export const settingsRouter = {
       .handler(async ({ input, context }) => {
        const user = context.session?.user;
        if (!user) {
-         throw new Error("Usuário não encontrado");
+         throw new ORPCError("UNAUTHORIZED");
        }
 
        // Atualizar usuário no banco de dados
@@ -158,11 +159,11 @@ export const settingsRouter = {
          };
        }
 
-       if (response.status === 409) {
-         throw new Error("Usuário já existe");
-       }
+      if (response.status === 409) {
+          throw new ORPCError("CONFLICT");
+      }
 
-       const errorMessage = await response.text();
-       throw new Error(errorMessage || "Falha ao criar usuário");
-     }),
+      await response.text();
+      throw new ORPCError("INTERNAL_SERVER_ERROR");
+    }),
 };

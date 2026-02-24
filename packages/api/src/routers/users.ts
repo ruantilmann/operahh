@@ -62,7 +62,7 @@ export const userRouter = {
     .handler(({ context }) => {
       const user = context.session?.user;
       if (!user) {
-        throw new Error("Usuário não encontrado");
+        throw new ORPCError("UNAUTHORIZED");
       }
       
       return {
@@ -85,7 +85,7 @@ export const userRouter = {
     .handler(async ({ input, context }) => {
       const user = context.session?.user;
       if (!user) {
-        throw new Error("Usuário não encontrado");
+        throw new ORPCError("UNAUTHORIZED");
       }
 
       await prisma.user.update({
