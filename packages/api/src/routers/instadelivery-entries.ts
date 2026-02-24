@@ -237,39 +237,54 @@ export const instadeliveryEntriesRouter = {
         products.map((product: ProductSnapshot) => [product.id, product])
       );
 
-      const entry: InstaDeliveryEntryWithItems = await prisma.instaDeliveryEntry.update({
-        where: { id: input.id },
-        data: {
-          date: input.date,
-          customerName: input.customerName.trim(),
-          whatsapp: input.whatsapp.trim(),
-          fulfillmentType: fulfillmentMap[input.fulfillmentType],
-          deliveryFee: input.deliveryFee,
-          paymentMethod: paymentMethodMap[input.paymentMethod],
-          amountPaid: input.amountPaid,
-          status: statusMap[input.status ?? "pago"],
-          notes: input.notes?.trim() || null,
-          items: {
-            deleteMany: {},
-            create: input.items.map((item) => {
-              const product = productMap.get(item.productId);
-              if (!product) {
-                throw new ORPCError("NOT_FOUND");
-              }
+      const itemsData = input.items.map((item) => {
+        const product = productMap.get(item.productId);
+        if (!product) {
+          throw new ORPCError("NOT_FOUND");
+        }
 
-              return {
-                product: {
-                  connect: { id: item.productId },
-                },
-                quantity: item.quantity,
-                productNameSnapshot: product.name,
-                unitPriceSnapshot: product.price,
-              };
-            }),
-          },
-        },
-        include: { items: true },
+        return {
+          entryId: input.id,
+          productId: item.productId,
+          quantity: item.quantity,
+          productNameSnapshot: product.name,
+          unitPriceSnapshot: product.price,
+        };
       });
+
+      const entry = await prisma.$transaction(async (tx) => {
+        await tx.instaDeliveryEntry.update({
+          where: { id: input.id },
+          data: {
+            date: input.date,
+            customerName: input.customerName.trim(),
+            whatsapp: input.whatsapp.trim(),
+            fulfillmentType: fulfillmentMap[input.fulfillmentType],
+            deliveryFee: input.deliveryFee,
+            paymentMethod: paymentMethodMap[input.paymentMethod],
+            amountPaid: input.amountPaid,
+            status: statusMap[input.status ?? "pago"],
+            notes: input.notes?.trim() || null,
+          },
+        });
+
+        await tx.instaDeliveryEntryItem.deleteMany({
+          where: { entryId: input.id },
+        });
+
+        await tx.instaDeliveryEntryItem.createMany({
+          data: itemsData,
+        });
+
+        return tx.instaDeliveryEntry.findUnique({
+          where: { id: input.id },
+          include: { items: true },
+        });
+      });
+
+      if (!entry) {
+        throw new ORPCError("NOT_FOUND");
+      }
 
       return {
         id: entry.id,
