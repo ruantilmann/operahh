@@ -1,11 +1,21 @@
 "use client";
 
+import { useState, type FormEvent } from "react";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { BookOpen, Component, Calculator, Plus, Trash2 } from "lucide-react";
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
+} from "@/components/ui/dialog";
 import {
     Table,
     TableBody,
@@ -31,6 +41,13 @@ const mockRecipes = [
 ];
 
 export default function Precificacao() {
+    const [isRecipeDialogOpen, setIsRecipeDialogOpen] = useState(false);
+
+    const handleRecipeSubmit = (event: FormEvent<HTMLFormElement>) => {
+        event.preventDefault();
+        setIsRecipeDialogOpen(false);
+    };
+
     return (
         <div className="space-y-6">
             <div>
@@ -60,10 +77,91 @@ export default function Precificacao() {
                     <Card className="p-6">
                         <div className="flex justify-between items-center mb-4">
                             <h3 className="text-lg font-semibold">Banco de Receitas</h3>
-                            <Button className="gap-2">
-                                <Plus className="h-4 w-4" />
-                                Nova Receita
-                            </Button>
+                            <Dialog open={isRecipeDialogOpen} onOpenChange={setIsRecipeDialogOpen}>
+                                <DialogTrigger
+                                    render={
+                                        <Button className="gap-2">
+                                            <Plus className="h-4 w-4" />
+                                            Nova Receita
+                                        </Button>
+                                    }
+                                />
+                                <DialogContent className="sm:max-w-4xl">
+                                    <form onSubmit={handleRecipeSubmit} className="space-y-6">
+                                        <DialogHeader>
+                                            <DialogTitle>Adicionar Nova Receita</DialogTitle>
+                                            <DialogDescription>
+                                                Cadastre uma nova receita e defina os custos de produção.
+                                            </DialogDescription>
+                                        </DialogHeader>
+                                        <div className="space-y-4">
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                <div>
+                                                    <Label>Nome da Receita</Label>
+                                                    <Input placeholder="Ex: Brigadeiro Gourmet" />
+                                                </div>
+                                                <div>
+                                                    <Label>Rendimento</Label>
+                                                    <Input placeholder="Ex: 50 unidades" />
+                                                </div>
+                                                <div>
+                                                    <Label>Tempo Total (minutos)</Label>
+                                                    <Input type="number" placeholder="0" />
+                                                </div>
+                                                <div>
+                                                    <Label>Custo de Mão de Obra (R$/min)</Label>
+                                                    <Input type="number" step="0.01" placeholder="0.00" />
+                                                </div>
+                                            </div>
+
+                                            <div>
+                                                <Label className="mb-2 block">Ingredientes</Label>
+                                                <div className="space-y-2">
+                                                    <div className="grid grid-cols-3 gap-2">
+                                                        <Input placeholder="Ingrediente" />
+                                                        <Input placeholder="Quantidade" />
+                                                        <div className="flex gap-2">
+                                                            <Input placeholder="Custo" />
+                                                            <Button variant="destructive" size="icon">
+                                                                <Trash2 className="h-4 w-4" />
+                                                            </Button>
+                                                        </div>
+                                                    </div>
+                                                    <Button variant="outline" size="sm" className="gap-2">
+                                                        <Plus className="h-4 w-4" />
+                                                        Adicionar Ingrediente
+                                                    </Button>
+                                                </div>
+                                            </div>
+
+                                            <div className="bg-secondary p-4 rounded-lg">
+                                                <div className="grid grid-cols-2 gap-4">
+                                                    <div>
+                                                        <p className="text-sm text-muted-foreground">Custo Total</p>
+                                                        <p className="text-2xl font-bold text-foreground">R$ 60,00</p>
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-sm text-muted-foreground">Custo por Unidade</p>
+                                                        <p className="text-2xl font-bold text-primary">R$ 1,20</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <DialogFooter>
+                                            <Button
+                                                type="button"
+                                                variant="outline"
+                                                onClick={() => setIsRecipeDialogOpen(false)}
+                                            >
+                                                Cancelar
+                                            </Button>
+                                            <Button type="submit" size="lg">
+                                                Salvar Receita
+                                            </Button>
+                                        </DialogFooter>
+                                    </form>
+                                </DialogContent>
+                            </Dialog>
                         </div>
 
                         <div className="overflow-x-auto">
@@ -98,66 +196,6 @@ export default function Precificacao() {
                         </div>
                     </Card>
 
-                    <Card className="p-6">
-                        <h3 className="text-lg font-semibold mb-4">Adicionar Nova Receita</h3>
-                        <div className="space-y-4">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div>
-                                    <Label>Nome da Receita</Label>
-                                    <Input placeholder="Ex: Brigadeiro Gourmet" />
-                                </div>
-                                <div>
-                                    <Label>Rendimento</Label>
-                                    <Input placeholder="Ex: 50 unidades" />
-                                </div>
-                                <div>
-                                    <Label>Tempo Total (minutos)</Label>
-                                    <Input type="number" placeholder="0" />
-                                </div>
-                                <div>
-                                    <Label>Custo de Mão de Obra (R$/min)</Label>
-                                    <Input type="number" step="0.01" placeholder="0.00" />
-                                </div>
-                            </div>
-
-                            <div>
-                                <Label className="mb-2 block">Ingredientes</Label>
-                                <div className="space-y-2">
-                                    <div className="grid grid-cols-3 gap-2">
-                                        <Input placeholder="Ingrediente" />
-                                        <Input placeholder="Quantidade" />
-                                        <div className="flex gap-2">
-                                            <Input placeholder="Custo" />
-                                            <Button variant="destructive" size="icon">
-                                                <Trash2 className="h-4 w-4" />
-                                            </Button>
-                                        </div>
-                                    </div>
-                                    <Button variant="outline" size="sm" className="gap-2">
-                                        <Plus className="h-4 w-4" />
-                                        Adicionar Ingrediente
-                                    </Button>
-                                </div>
-                            </div>
-
-                            <div className="bg-secondary p-4 rounded-lg">
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div>
-                                        <p className="text-sm text-muted-foreground">Custo Total</p>
-                                        <p className="text-2xl font-bold text-foreground">R$ 60,00</p>
-                                    </div>
-                                    <div>
-                                        <p className="text-sm text-muted-foreground">Custo por Unidade</p>
-                                        <p className="text-2xl font-bold text-primary">R$ 1,20</p>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="flex justify-end">
-                                <Button size="lg">Salvar Receita</Button>
-                            </div>
-                        </div>
-                    </Card>
                 </TabsContent>
 
                 <TabsContent value="componentes" className="space-y-6 mt-6">
