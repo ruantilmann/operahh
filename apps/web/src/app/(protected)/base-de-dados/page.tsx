@@ -191,9 +191,8 @@ export default function BaseDeDadosPage() {
       </div>
 
       <Tabs defaultValue="financeiro" className="w-full">
-        <TabsList className="grid w-full grid-cols-4 max-w-xl">
+        <TabsList className="grid w-full grid-cols-3 max-w-xl">
           <TabsTrigger value="financeiro">Financeiro</TabsTrigger>
-          <TabsTrigger value="receitas">Receitas</TabsTrigger>
           <TabsTrigger value="categorias">Categorias</TabsTrigger>
           <TabsTrigger value="produtos">Produtos</TabsTrigger>
         </TabsList>
@@ -257,37 +256,6 @@ export default function BaseDeDadosPage() {
               </div>
             </div>
           </Card>
-        </TabsContent>
-
-        <TabsContent value="receitas" className="space-y-6 mt-6">
-          <Card className="p-6">
-            <h3 className="text-lg font-semibold mb-4">Gestão de Receitas Base</h3>
-            <div className="space-y-2 mb-4">
-              {["Brigadeiro Gourmet", "Bolo de Chocolate", "Torta de Limão"].map(
-                (receita, index) => (
-                  <div
-                    key={index}
-                    className="flex items-center justify-between p-3 bg-secondary rounded-lg"
-                  >
-                    <span className="font-medium">{receita}</span>
-                    <div className="space-x-2">
-                      <Button variant="ghost" size="sm">
-                        Editar
-                      </Button>
-                      <Button variant="ghost" size="sm" className="text-destructive">
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
-                )
-              )}
-            </div>
-            <Button className="gap-2">
-              <Plus className="h-4 w-4" />
-              Nova Receita Base
-            </Button>
-          </Card>
-
         </TabsContent>
 
         <TabsContent value="categorias" className="space-y-6 mt-6">
